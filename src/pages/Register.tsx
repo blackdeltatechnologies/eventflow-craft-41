@@ -296,7 +296,7 @@ const Register = () => {
   if (submitted) {
     return wrapDark(
       <div className="min-h-screen flex items-center justify-center px-4 py-12 bg-background text-foreground" style={{ background: isDark ? undefined : `linear-gradient(135deg, ${brandColor}15, ${brandColor}05)` }}>
-        <SuccessCard brandColor={brandColor} eventName={event.name} />
+        <SuccessCard brandColor={brandColor} eventName={event.name} registrationId={registrationId} />
       </div>
     );
   }
