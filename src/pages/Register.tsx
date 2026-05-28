@@ -204,6 +204,7 @@ const Register = () => {
   const [formData, setFormData] = useState<Record<string, string>>({});
   const [consent, setConsent] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [registrationId, setRegistrationId] = useState<string | null>(null);
 
   const handleFieldChange = useCallback((label: string, value: string) => {
     setFormData(prev => ({ ...prev, [label]: value }));
@@ -242,8 +243,29 @@ const Register = () => {
       return;
     }
     try {
-      await createReg.mutateAsync({ event_id: event.id, data: formData });
+      const newId = await createReg.mutateAsync({ event_id: event.id, data: formData });
+      setRegistrationId(newId as unknown as string);
       setSubmitted(true);
+
+      // Fire-and-forget confirmation email. Silently skips if email infra isn't set up yet.
+      const recipientEmail = formData["Email Address"] || formData["Email"] || formData["email"];
+      if (recipientEmail) {
+        supabase.functions.invoke("send-transactional-email", {
+          body: {
+            templateName: "event-registration-confirmation",
+            recipientEmail,
+            idempotencyKey: `event-reg-${newId}`,
+            templateData: {
+              name: formData["Full Name"] || formData["Name"] || "",
+              eventName: event.name,
+              eventDate: event.event_date,
+              locationType: event.location_type,
+              locationValue: event.location_value,
+              registrationId: newId,
+            },
+          },
+        }).catch(() => { /* ignore – email infra may not be configured yet */ });
+      }
     } catch (err: any) {
       toast.error(err.message || "Registration failed");
     }
