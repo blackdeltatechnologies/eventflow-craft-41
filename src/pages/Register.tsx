@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,8 @@ import { CalendarDays, MapPin, Video, Globe, Loader2, CheckCircle2, Zap } from "
 import { useEventBySlug, Event } from "@/hooks/useEvents";
 import { useFormFields } from "@/hooks/useFormFields";
 import { useCreateRegistration } from "@/hooks/useRegistrations";
+import { supabase } from "@/integrations/supabase/client";
+import QRCode from "qrcode";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { Tables } from "@/integrations/supabase/types";
@@ -51,19 +53,36 @@ function formatEventDateTime(event: Event) {
 
 // ─── Extracted stable components ───
 
-const SuccessCard = ({ brandColor, eventName }: { brandColor: string; eventName: string }) => (
-  <motion.div key="success" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-lg mx-auto">
-    <Card className="border-border shadow-2xl">
-      <CardContent className="p-8 text-center">
-        <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", delay: 0.2 }}>
-          <CheckCircle2 className="w-16 h-16 mx-auto mb-4" style={{ color: brandColor }} />
-        </motion.div>
-        <h2 className="text-2xl font-display font-bold mb-2">You're Registered!</h2>
-        <p className="text-muted-foreground">Thank you for registering for <strong>{eventName}</strong>. You'll receive a confirmation email shortly.</p>
-      </CardContent>
-    </Card>
-  </motion.div>
-);
+const SuccessCard = ({ brandColor, eventName, registrationId }: { brandColor: string; eventName: string; registrationId: string | null }) => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    if (canvasRef.current && registrationId) {
+      QRCode.toCanvas(canvasRef.current, registrationId, { width: 180, margin: 1, color: { dark: "#000", light: "#fff" } });
+    }
+  }, [registrationId]);
+  return (
+    <motion.div key="success" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-lg mx-auto">
+      <Card className="border-border shadow-2xl">
+        <CardContent className="p-8 text-center">
+          <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", delay: 0.2 }}>
+            <CheckCircle2 className="w-16 h-16 mx-auto mb-4" style={{ color: brandColor }} />
+          </motion.div>
+          <h2 className="text-2xl font-display font-bold mb-2">You're Registered!</h2>
+          <p className="text-muted-foreground mb-6">Thank you for registering for <strong>{eventName}</strong>. A confirmation email is on its way.</p>
+          {registrationId && (
+            <div className="border-t border-border pt-6">
+              <p className="text-xs text-muted-foreground mb-3 font-medium uppercase tracking-wide">Your check-in pass</p>
+              <div className="inline-block bg-white p-3 rounded-xl">
+                <canvas ref={canvasRef} />
+              </div>
+              <p className="text-xs text-muted-foreground mt-3">Show this QR code at the door.</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </motion.div>
+  );
+};
 
 const EventInfo = ({ event, className = "" }: { event: Event; className?: string }) => {
   const [expanded, setExpanded] = useState(false);
@@ -171,7 +190,7 @@ const FlyerImage = ({ flyerUrl, eventName, className = "" }: { flyerUrl: string 
 
 const PoweredBy = () => (
   <p className="text-center text-xs text-muted-foreground mt-6">
-    Powered by <span className="font-semibold">eventspark</span>
+    Powered by <span className="font-semibold">EVENTLAUNCH</span>
   </p>
 );
 
@@ -185,6 +204,7 @@ const Register = () => {
   const [formData, setFormData] = useState<Record<string, string>>({});
   const [consent, setConsent] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [registrationId, setRegistrationId] = useState<string | null>(null);
 
   const handleFieldChange = useCallback((label: string, value: string) => {
     setFormData(prev => ({ ...prev, [label]: value }));
@@ -223,8 +243,29 @@ const Register = () => {
       return;
     }
     try {
-      await createReg.mutateAsync({ event_id: event.id, data: formData });
+      const newId = await createReg.mutateAsync({ event_id: event.id, data: formData });
+      setRegistrationId(newId as unknown as string);
       setSubmitted(true);
+
+      // Fire-and-forget confirmation email. Silently skips if email infra isn't set up yet.
+      const recipientEmail = formData["Email Address"] || formData["Email"] || formData["email"];
+      if (recipientEmail) {
+        supabase.functions.invoke("send-transactional-email", {
+          body: {
+            templateName: "event-registration-confirmation",
+            recipientEmail,
+            idempotencyKey: `event-reg-${newId}`,
+            templateData: {
+              name: formData["Full Name"] || formData["Name"] || "",
+              eventName: event.name,
+              eventDate: event.event_date,
+              locationType: event.location_type,
+              locationValue: event.location_value,
+              registrationId: newId,
+            },
+          },
+        }).catch(() => { /* ignore – email infra may not be configured yet */ });
+      }
     } catch (err: any) {
       toast.error(err.message || "Registration failed");
     }
@@ -255,7 +296,7 @@ const Register = () => {
   if (submitted) {
     return wrapDark(
       <div className="min-h-screen flex items-center justify-center px-4 py-12 bg-background text-foreground" style={{ background: isDark ? undefined : `linear-gradient(135deg, ${brandColor}15, ${brandColor}05)` }}>
-        <SuccessCard brandColor={brandColor} eventName={event.name} />
+        <SuccessCard brandColor={brandColor} eventName={event.name} registrationId={registrationId} />
       </div>
     );
   }

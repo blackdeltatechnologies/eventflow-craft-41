@@ -209,6 +209,7 @@ export type Database = {
       }
       registrations: {
         Row: {
+          checked_in_at: string | null
           created_at: string
           data: Json
           event_id: string
@@ -216,6 +217,7 @@ export type Database = {
           status: Database["public"]["Enums"]["registration_status"]
         }
         Insert: {
+          checked_in_at?: string | null
           created_at?: string
           data?: Json
           event_id: string
@@ -223,6 +225,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["registration_status"]
         }
         Update: {
+          checked_in_at?: string | null
           created_at?: string
           data?: Json
           event_id?: string

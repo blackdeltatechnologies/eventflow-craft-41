@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { ArrowLeft, ExternalLink, Copy, MoreVertical } from "lucide-react";
+import { ArrowLeft, ExternalLink, Copy, MoreVertical, QrCode } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Tables } from "@/integrations/supabase/types";
 import { toast } from "sonner";
@@ -68,6 +68,9 @@ export default function EventDetailHeader({ event, onStatusChange }: Props) {
               <ExternalLink className="w-3 h-3 mr-1" /> Preview
             </a>
           </Button>
+          <Button size="sm" className="h-8 text-xs rounded-full" onClick={() => navigate(`/dashboard/events/${event.id}/check-in`)}>
+            <QrCode className="w-3 h-3 mr-1" /> Check-in
+          </Button>
         </div>
 
         {/* Mobile 3-dot menu */}
@@ -90,6 +93,9 @@ export default function EventDetailHeader({ event, onStatusChange }: Props) {
               </DropdownMenuItem>
               <DropdownMenuItem onClick={handleCopyLink}>
                 <Copy className="w-3.5 h-3.5 mr-2" /> Copy Link
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate(`/dashboard/events/${event.id}/check-in`)}>
+                <QrCode className="w-3.5 h-3.5 mr-2" /> Check-in
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <a href={`/register/${event.slug}`} target="_blank" rel="noopener noreferrer">

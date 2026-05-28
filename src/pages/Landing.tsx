@@ -456,10 +456,13 @@ const Landing = () => {
               <div className="flex items-center justify-center mb-6">
                 <Logo size="lg" />
               </div>
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold mb-5">
+                <Sparkles className="w-3.5 h-3.5" /> Trusted by 10,000+ event organizers
+              </div>
               <h1 className="text-4xl sm:text-5xl lg:text-[44px] 2xl:text-[56px] font-display tracking-tight leading-[1.15] text-foreground mb-6" style={{ fontWeight: titleWeight }}>
-                The event platform
+                Launch unforgettable
                 <br />
-                where ideas become{" "}
+                {" "}
                 <span className="inline-block relative" style={{ minWidth: "7ch" }}>
                   <AnimatePresence mode="wait">
                     <motion.span
@@ -468,22 +471,39 @@ const Landing = () => {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -16 }}
                       transition={{ duration: 0.35 }}
-                      className="text-foreground inline-block"
+                      className="text-primary inline-block"
                     >
                       {rotatingWords[wordIndex]}
                     </motion.span>
                   </AnimatePresence>
-                  {/* Invisible longest word to reserve space */}
                   <span className="invisible block h-0 overflow-hidden" aria-hidden="true">communities.</span>
                 </span>
               </h1>
               <p className="text-lg text-muted-foreground max-w-lg mx-auto mb-8 leading-relaxed">
-                Whatever your event — from workshops to conferences — build branded
-                registration pages, track attendees, and grow your community. No code required.
+                EVENTLAUNCH is the all-in-one platform to build branded registration pages,
+                track attendees in real time, and check them in at the door — no code required.
               </p>
-              <Button size="lg" className="text-base font-semibold px-8 h-12" asChild>
-                <Link to="/auth">Get started <ArrowRight className="ml-2 w-4 h-4" /></Link>
-              </Button>
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-8">
+                <Button size="lg" className="text-base font-semibold px-8 h-12 w-full sm:w-auto" asChild>
+                  <Link to="/auth">Start for free <ArrowRight className="ml-2 w-4 h-4" /></Link>
+                </Button>
+                <Button size="lg" variant="outline" className="text-base font-semibold px-8 h-12 w-full sm:w-auto" asChild>
+                  <a href="#features">See features</a>
+                </Button>
+              </div>
+              <div className="flex items-center justify-center gap-3">
+                <div className="flex -space-x-2">
+                  {AVATAR_URLS.slice(0, 5).map((url, i) => (
+                    <img key={i} src={url} alt="" className="w-7 h-7 rounded-full border-2 border-background object-cover" />
+                  ))}
+                </div>
+                <div className="flex items-center gap-1">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} className="w-3.5 h-3.5 fill-primary text-primary" />
+                  ))}
+                </div>
+                <span className="text-xs text-muted-foreground font-medium">4.9 from 2,400+ reviews</span>
+              </div>
             </motion.div>
           </div>
         </div>
