@@ -96,6 +96,7 @@ export default function EventDetailHeader({ event, onStatusChange }: Props) {
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => navigate(`/dashboard/events/${event.id}/check-in`)}>
                 <QrCode className="w-3.5 h-3.5 mr-2" /> Check-in
+              </DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <a href={`/register/${event.slug}`} target="_blank" rel="noopener noreferrer">
                   <ExternalLink className="w-3.5 h-3.5 mr-2" /> Preview
