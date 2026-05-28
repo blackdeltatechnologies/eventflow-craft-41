@@ -54,24 +54,47 @@ export function useCreateRegistration() {
   });
 }
 
+export function useCheckInRegistration() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, eventId }: { id: string; eventId: string }) => {
+      const { data, error } = await supabase
+        .from("registrations")
+        .update({ checked_in_at: new Date().toISOString(), status: "checked_in" })
+        .eq("id", id)
+        .eq("event_id", eventId)
+        .select()
+        .maybeSingle();
+      if (error) throw error;
+      if (!data) throw new Error("Registration not found for this event");
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["registrations"] });
+      qc.invalidateQueries({ queryKey: ["registration-stats"] });
+    },
+  });
+}
+
 export function useRegistrationStats() {
   return useQuery({
     queryKey: ["registration-stats"],
     queryFn: async () => {
       const { data: registrations, error } = await supabase
         .from("registrations")
-        .select("created_at, event_id, status");
+        .select("created_at, event_id, status, checked_in_at");
       if (error) throw error;
-      
+
       const { data: events, error: eventsError } = await supabase
         .from("events")
-        .select("id, name, status");
+        .select("id, name, status, capacity, created_at");
       if (eventsError) throw eventsError;
 
       const total = registrations?.length ?? 0;
       const activeEvents = events?.filter(e => e.status === "live").length ?? 0;
+      const totalCheckedIn = registrations?.filter((r: any) => r.checked_in_at).length ?? 0;
+      const checkInRate = total > 0 ? Math.round((totalCheckedIn / total) * 100) : 0;
 
-      // Group by month
       const byMonth: Record<string, number> = {};
       registrations?.forEach(r => {
         const month = new Date(r.created_at).toLocaleString("default", { month: "short" });
@@ -80,7 +103,7 @@ export function useRegistrationStats() {
 
       const chartData = Object.entries(byMonth).map(([date, registrations]) => ({ date, registrations }));
 
-      return { total, activeEvents, chartData, registrations, events };
+      return { total, activeEvents, totalCheckedIn, checkInRate, chartData, registrations, events };
     },
   });
 }
