@@ -583,7 +583,7 @@ const Landing = () => {
                     <Star key={i} className="w-3.5 h-3.5 fill-primary text-primary" />
                   ))}
                 </div>
-                <span className="text-xs text-muted-foreground font-medium">4.9 from 2,400+ reviews</span>
+                <span className="text-xs text-muted-foreground font-medium">4.9 rating · 1,200+ events launched this month</span>
               </div>
             </motion.div>
           </div>
