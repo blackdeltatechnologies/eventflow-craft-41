@@ -831,6 +831,36 @@ const Landing = () => {
         </div>
       </section>
 
+      {/* FAQ */}
+      <section className="py-20 lg:py-28 bg-card">
+        <div className="max-w-3xl mx-auto px-6 lg:px-8">
+          <motion.div
+            className="text-center mb-12"
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+          >
+            <h2 className="text-3xl sm:text-4xl font-display mb-3 text-foreground tracking-[-0.02em]" style={{ fontWeight: titleWeight }}>
+              Frequently asked questions
+            </h2>
+            <p className="text-muted-foreground">Everything you need to know before your first event.</p>
+          </motion.div>
+          <Accordion type="single" collapsible className="w-full">
+            {FAQS.map((f, i) => (
+              <AccordionItem key={f.q} value={`item-${i}`} className="border-b border-border/50">
+                <AccordionTrigger className="text-left font-display font-semibold text-base hover:no-underline py-5">
+                  {f.q}
+                </AccordionTrigger>
+                <AccordionContent className="text-muted-foreground text-[15px] leading-relaxed pb-5">
+                  {f.a}
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
+        </div>
+      </section>
+
       {/* CTA */}
       <section className="pt-10 lg:pt-16 pb-12 lg:pb-16 relative">
         <div className="max-w-4xl mx-auto px-6 lg:px-8">
