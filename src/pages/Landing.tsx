@@ -32,6 +32,81 @@ import avatarSarah from "@/assets/avatar-sarah.jpg";
 import avatarMarcus from "@/assets/avatar-marcus.jpg";
 import avatarPriya from "@/assets/avatar-priya.jpg";
 
+// Animated count-up number
+function CountUp({ to, suffix = "", duration = 1.6 }: { to: number; suffix?: string; duration?: number }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const inView = useInView(ref, { once: true, margin: "-80px" });
+  const mv = useMotionValue(0);
+  const rounded = useTransform(mv, (v) => Math.round(v).toLocaleString());
+  useEffect(() => {
+    if (inView) {
+      const controls = animate(mv, to, { duration, ease: "easeOut" });
+      return controls.stop;
+    }
+  }, [inView, to, duration, mv]);
+  return (
+    <span ref={ref}>
+      <motion.span>{rounded}</motion.span>
+      {suffix}
+    </span>
+  );
+}
+
+// Inline wordmark for logo cloud (no fake brand SVGs)
+function Wordmark({ name, mark }: { name: string; mark: string }) {
+  return (
+    <div className="flex items-center gap-2 text-muted-foreground/70 hover:text-foreground transition-colors">
+      <span className="w-7 h-7 rounded-md bg-foreground/10 flex items-center justify-center text-[11px] font-display font-bold">
+        {mark}
+      </span>
+      <span className="font-display font-semibold tracking-tight text-base sm:text-lg">{name}</span>
+    </div>
+  );
+}
+
+const STATS = [
+  { value: 12000, suffix: "+", label: "Events launched" },
+  { value: 480000, suffix: "+", label: "Attendees registered" },
+  { value: 38, suffix: "", label: "Countries" },
+  { value: 99, suffix: "%", label: "Uptime" },
+];
+
+const LOGOS = [
+  { name: "Northwind", mark: "N" },
+  { name: "Acme Labs", mark: "A" },
+  { name: "Lumen", mark: "L" },
+  { name: "Pixelforge", mark: "P" },
+  { name: "Kestrel", mark: "K" },
+  { name: "Verge", mark: "V" },
+];
+
+const FAQS = [
+  {
+    q: "Is EVENTLAUNCH really free?",
+    a: "Yes — creating events, collecting registrations, check-in, and analytics are all free with no attendee caps and no paywall during your event.",
+  },
+  {
+    q: "Can I use my own branding?",
+    a: "Absolutely. Upload your logo, set your brand colors, write your own copy, and share a clean public link. Custom domains are on the roadmap.",
+  },
+  {
+    q: "How does check-in work at the door?",
+    a: "Every attendee gets a personal QR code on their confirmation screen. Open the Check-in page on any phone or tablet, scan, and they're in. Counts update live.",
+  },
+  {
+    q: "What integrations do you support?",
+    a: "Zoom, HubSpot, Mailchimp, Slack, Google Calendar and 20+ more — connect in a few clicks from the Integrations page.",
+  },
+  {
+    q: "Can attendees pay through EVENTLAUNCH?",
+    a: "Free events work out of the box today. Paid ticketing via Stripe is currently in private beta — ping us if you want early access.",
+  },
+  {
+    q: "How do I export my attendee list?",
+    a: "From any event's Attendees tab, export the full list as CSV in one click. Filter first if you only want a subset.",
+  },
+];
+
 
 const features = [
   {
