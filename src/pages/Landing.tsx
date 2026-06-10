@@ -761,38 +761,45 @@ const Landing = () => {
             </h2>
           </motion.div>
 
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {[
               {
-                quote: "eventspark cut our setup time by 80%. We went from spending hours on registration to minutes.",
-                name: "Sarah Chen",
-                role: "Community manager",
+                quote: "Cut our event setup from a full day to about 20 minutes. The check-in QR alone saved our sanity at the door.",
+                name: "Amelia Chen",
+                role: "Head of Community, Northwind",
                 avatar: avatarSarah,
               },
               {
-                quote: "The analytics alone are worth it. We finally know where our attendees are coming from.",
-                name: "Marcus Williams",
-                role: "Event coordinator",
+                quote: "Our registration conversion jumped 34% after we switched. The pages just feel faster and friendlier.",
+                name: "Marcus Okafor",
+                role: "Founder, BuildClub",
                 avatar: avatarMarcus,
               },
               {
-                quote: "Clean, professional, and easy to use. Our attendees always compliment the registration experience.",
-                name: "Priya Patel",
-                role: "Startup founder",
+                quote: "Finally analytics that don't need a spreadsheet export. I can see drop-off and top sources at a glance.",
+                name: "Priya Raman",
+                role: "Events Lead, Lumen Studio",
                 avatar: avatarPriya,
               },
               {
-                quote: "We switched from three different tools to just eventspark. Everything in one place is a game changer.",
-                name: "James Liu",
-                role: "Tech meetup organizer",
+                quote: "We run 4 meetups a month. Duplicating an event and tweaking the form takes literally one click.",
+                name: "Diego Alvarez",
+                role: "Organizer, LATAM Devs",
                 avatar: "https://i.pravatar.cc/300?img=33",
               },
               {
-                quote: "Our registrations doubled after switching. The pages just look so much more professional.",
-                name: "Amara Osei",
-                role: "Conference director",
+                quote: "Beautiful out of the box. Our brand looks premium without us touching a single design file.",
+                name: "Sofia Bergman",
+                role: "Marketing, Kestrel",
                 avatar: "https://i.pravatar.cc/300?img=47",
               },
+              {
+                quote: "The free tier is genuinely free — no paywalls in the middle of an event. Rare and refreshing.",
+                name: "Jordan Ng",
+                role: "Community Manager, Pixelforge",
+                avatar: "https://i.pravatar.cc/300?img=12",
+              },
+
             ].map((testimonial, i) => (
               <motion.div
                 key={testimonial.name}
