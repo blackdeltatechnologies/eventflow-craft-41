@@ -1,9 +1,15 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { Link } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useInView, useMotionValue, useTransform, animate } from "framer-motion";
 import {
   Puzzle,
   ArrowRight,
@@ -25,6 +31,81 @@ import eventSummit from "@/assets/event-vibe-coding-summit.jpg";
 import avatarSarah from "@/assets/avatar-sarah.jpg";
 import avatarMarcus from "@/assets/avatar-marcus.jpg";
 import avatarPriya from "@/assets/avatar-priya.jpg";
+
+// Animated count-up number
+function CountUp({ to, suffix = "", duration = 1.6 }: { to: number; suffix?: string; duration?: number }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const inView = useInView(ref, { once: true, margin: "-80px" });
+  const mv = useMotionValue(0);
+  const rounded = useTransform(mv, (v) => Math.round(v).toLocaleString());
+  useEffect(() => {
+    if (inView) {
+      const controls = animate(mv, to, { duration, ease: "easeOut" });
+      return controls.stop;
+    }
+  }, [inView, to, duration, mv]);
+  return (
+    <span ref={ref}>
+      <motion.span>{rounded}</motion.span>
+      {suffix}
+    </span>
+  );
+}
+
+// Inline wordmark for logo cloud (no fake brand SVGs)
+function Wordmark({ name, mark }: { name: string; mark: string }) {
+  return (
+    <div className="flex items-center gap-2 text-muted-foreground/70 hover:text-foreground transition-colors">
+      <span className="w-7 h-7 rounded-md bg-foreground/10 flex items-center justify-center text-[11px] font-display font-bold">
+        {mark}
+      </span>
+      <span className="font-display font-semibold tracking-tight text-base sm:text-lg">{name}</span>
+    </div>
+  );
+}
+
+const STATS = [
+  { value: 12000, suffix: "+", label: "Events launched" },
+  { value: 480000, suffix: "+", label: "Attendees registered" },
+  { value: 38, suffix: "", label: "Countries" },
+  { value: 99, suffix: "%", label: "Uptime" },
+];
+
+const LOGOS = [
+  { name: "Northwind", mark: "N" },
+  { name: "Acme Labs", mark: "A" },
+  { name: "Lumen", mark: "L" },
+  { name: "Pixelforge", mark: "P" },
+  { name: "Kestrel", mark: "K" },
+  { name: "Verge", mark: "V" },
+];
+
+const FAQS = [
+  {
+    q: "Is EVENTLAUNCH really free?",
+    a: "Yes — creating events, collecting registrations, check-in, and analytics are all free with no attendee caps and no paywall during your event.",
+  },
+  {
+    q: "Can I use my own branding?",
+    a: "Absolutely. Upload your logo, set your brand colors, write your own copy, and share a clean public link. Custom domains are on the roadmap.",
+  },
+  {
+    q: "How does check-in work at the door?",
+    a: "Every attendee gets a personal QR code on their confirmation screen. Open the Check-in page on any phone or tablet, scan, and they're in. Counts update live.",
+  },
+  {
+    q: "What integrations do you support?",
+    a: "Zoom, HubSpot, Mailchimp, Slack, Google Calendar and 20+ more — connect in a few clicks from the Integrations page.",
+  },
+  {
+    q: "Can attendees pay through EVENTLAUNCH?",
+    a: "Free events work out of the box today. Paid ticketing via Stripe is currently in private beta — ping us if you want early access.",
+  },
+  {
+    q: "How do I export my attendee list?",
+    a: "From any event's Attendees tab, export the full list as CSV in one click. Filter first if you only want a subset.",
+  },
+];
 
 
 const features = [
@@ -457,7 +538,7 @@ const Landing = () => {
                 <Logo size="lg" />
               </div>
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold mb-5">
-                <Sparkles className="w-3.5 h-3.5" /> Trusted by 10,000+ event organizers
+                <Sparkles className="w-3.5 h-3.5" /> New • Built-in check-in & analytics
               </div>
               <h1 className="text-4xl sm:text-5xl lg:text-[44px] 2xl:text-[56px] font-display tracking-tight leading-[1.15] text-foreground mb-6" style={{ fontWeight: titleWeight }}>
                 Launch unforgettable
@@ -502,9 +583,46 @@ const Landing = () => {
                     <Star key={i} className="w-3.5 h-3.5 fill-primary text-primary" />
                   ))}
                 </div>
-                <span className="text-xs text-muted-foreground font-medium">4.9 from 2,400+ reviews</span>
+                <span className="text-xs text-muted-foreground font-medium">4.9 rating · 1,200+ events launched this month</span>
               </div>
             </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* Stats band */}
+      <section className="py-16 lg:py-20 border-t border-border/40">
+        <div className="max-w-6xl mx-auto px-6 lg:px-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-4">
+            {STATS.map((s, i) => (
+              <motion.div
+                key={s.label}
+                className="text-center"
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: i * 0.08 }}
+              >
+                <div className="text-4xl sm:text-5xl font-display font-bold tracking-tight text-foreground" style={{ fontWeight: titleWeight }}>
+                  <CountUp to={s.value} suffix={s.suffix} />
+                </div>
+                <div className="mt-2 text-sm text-muted-foreground font-medium">{s.label}</div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Logo cloud */}
+      <section className="py-12 lg:py-16">
+        <div className="max-w-6xl mx-auto px-6 lg:px-8">
+          <p className="text-center text-xs font-semibold tracking-[0.18em] uppercase text-muted-foreground mb-8">
+            Used by teams at
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-x-10 gap-y-6 sm:gap-x-14">
+            {LOGOS.map((l) => (
+              <Wordmark key={l.name} name={l.name} mark={l.mark} />
+            ))}
           </div>
         </div>
       </section>
@@ -643,38 +761,45 @@ const Landing = () => {
             </h2>
           </motion.div>
 
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {[
               {
-                quote: "eventspark cut our setup time by 80%. We went from spending hours on registration to minutes.",
-                name: "Sarah Chen",
-                role: "Community manager",
+                quote: "Cut our event setup from a full day to about 20 minutes. The check-in QR alone saved our sanity at the door.",
+                name: "Amelia Chen",
+                role: "Head of Community, Northwind",
                 avatar: avatarSarah,
               },
               {
-                quote: "The analytics alone are worth it. We finally know where our attendees are coming from.",
-                name: "Marcus Williams",
-                role: "Event coordinator",
+                quote: "Our registration conversion jumped 34% after we switched. The pages just feel faster and friendlier.",
+                name: "Marcus Okafor",
+                role: "Founder, BuildClub",
                 avatar: avatarMarcus,
               },
               {
-                quote: "Clean, professional, and easy to use. Our attendees always compliment the registration experience.",
-                name: "Priya Patel",
-                role: "Startup founder",
+                quote: "Finally analytics that don't need a spreadsheet export. I can see drop-off and top sources at a glance.",
+                name: "Priya Raman",
+                role: "Events Lead, Lumen Studio",
                 avatar: avatarPriya,
               },
               {
-                quote: "We switched from three different tools to just eventspark. Everything in one place is a game changer.",
-                name: "James Liu",
-                role: "Tech meetup organizer",
+                quote: "We run 4 meetups a month. Duplicating an event and tweaking the form takes literally one click.",
+                name: "Diego Alvarez",
+                role: "Organizer, LATAM Devs",
                 avatar: "https://i.pravatar.cc/300?img=33",
               },
               {
-                quote: "Our registrations doubled after switching. The pages just look so much more professional.",
-                name: "Amara Osei",
-                role: "Conference director",
+                quote: "Beautiful out of the box. Our brand looks premium without us touching a single design file.",
+                name: "Sofia Bergman",
+                role: "Marketing, Kestrel",
                 avatar: "https://i.pravatar.cc/300?img=47",
               },
+              {
+                quote: "The free tier is genuinely free — no paywalls in the middle of an event. Rare and refreshing.",
+                name: "Jordan Ng",
+                role: "Community Manager, Pixelforge",
+                avatar: "https://i.pravatar.cc/300?img=12",
+              },
+
             ].map((testimonial, i) => (
               <motion.div
                 key={testimonial.name}
@@ -703,6 +828,36 @@ const Landing = () => {
               </motion.div>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section className="py-20 lg:py-28 bg-card">
+        <div className="max-w-3xl mx-auto px-6 lg:px-8">
+          <motion.div
+            className="text-center mb-12"
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+          >
+            <h2 className="text-3xl sm:text-4xl font-display mb-3 text-foreground tracking-[-0.02em]" style={{ fontWeight: titleWeight }}>
+              Frequently asked questions
+            </h2>
+            <p className="text-muted-foreground">Everything you need to know before your first event.</p>
+          </motion.div>
+          <Accordion type="single" collapsible className="w-full">
+            {FAQS.map((f, i) => (
+              <AccordionItem key={f.q} value={`item-${i}`} className="border-b border-border/50">
+                <AccordionTrigger className="text-left font-display font-semibold text-base hover:no-underline py-5">
+                  {f.q}
+                </AccordionTrigger>
+                <AccordionContent className="text-muted-foreground text-[15px] leading-relaxed pb-5">
+                  {f.a}
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
         </div>
       </section>
 
