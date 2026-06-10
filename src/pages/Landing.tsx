@@ -538,7 +538,7 @@ const Landing = () => {
                 <Logo size="lg" />
               </div>
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold mb-5">
-                <Sparkles className="w-3.5 h-3.5" /> Trusted by 10,000+ event organizers
+                <Sparkles className="w-3.5 h-3.5" /> New • Built-in check-in & analytics
               </div>
               <h1 className="text-4xl sm:text-5xl lg:text-[44px] 2xl:text-[56px] font-display tracking-tight leading-[1.15] text-foreground mb-6" style={{ fontWeight: titleWeight }}>
                 Launch unforgettable
