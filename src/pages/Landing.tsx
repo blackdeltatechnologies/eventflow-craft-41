@@ -590,6 +590,43 @@ const Landing = () => {
         </div>
       </section>
 
+      {/* Stats band */}
+      <section className="py-16 lg:py-20 border-t border-border/40">
+        <div className="max-w-6xl mx-auto px-6 lg:px-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-4">
+            {STATS.map((s, i) => (
+              <motion.div
+                key={s.label}
+                className="text-center"
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: i * 0.08 }}
+              >
+                <div className="text-4xl sm:text-5xl font-display font-bold tracking-tight text-foreground" style={{ fontWeight: titleWeight }}>
+                  <CountUp to={s.value} suffix={s.suffix} />
+                </div>
+                <div className="mt-2 text-sm text-muted-foreground font-medium">{s.label}</div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Logo cloud */}
+      <section className="py-12 lg:py-16">
+        <div className="max-w-6xl mx-auto px-6 lg:px-8">
+          <p className="text-center text-xs font-semibold tracking-[0.18em] uppercase text-muted-foreground mb-8">
+            Used by teams at
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-x-10 gap-y-6 sm:gap-x-14">
+            {LOGOS.map((l) => (
+              <Wordmark key={l.name} name={l.name} mark={l.mark} />
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Upcoming events showcase */}
       <section className="py-12 lg:py-16 pb-20 lg:pb-28">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
