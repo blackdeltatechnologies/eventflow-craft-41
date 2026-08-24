@@ -683,7 +683,7 @@ const Landing = () => {
               Everything you need to run amazing events
             </h2>
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              From page creation to post event analytics, eventspark has you covered.
+              From page creation to post event analytics, Eventry has you covered.
             </p>
           </motion.div>
 
@@ -969,7 +969,7 @@ const Landing = () => {
       <footer className="py-12 px-6 lg:px-8">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
           <Logo size="md" />
-          <p className="text-sm text-muted-foreground">© 2026 eventspark. All rights reserved.</p>
+          <p className="text-sm text-muted-foreground">© 2026 Eventry. All rights reserved.</p>
         </div>
       </footer>
 
