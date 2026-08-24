@@ -82,7 +82,7 @@ const LOGOS = [
 
 const FAQS = [
   {
-    q: "Is EVENTLAUNCH really free?",
+    q: "Is EVENTRY really free?",
     a: "Yes — creating events, collecting registrations, check-in, and analytics are all free with no attendee caps and no paywall during your event.",
   },
   {
@@ -90,7 +90,7 @@ const FAQS = [
     a: "Absolutely. Upload your logo, set your brand colors, write your own copy, and share a clean public link. Custom domains are on the roadmap.",
   },
   {
-    q: "How does check-in work at the door?",
+    q: "How does check in work at the door?",
     a: "Every attendee gets a personal QR code on their confirmation screen. Open the Check-in page on any phone or tablet, scan, and they're in. Counts update live.",
   },
   {
@@ -98,7 +98,7 @@ const FAQS = [
     a: "Zoom, HubSpot, Mailchimp, Slack, Google Calendar and 20+ more — connect in a few clicks from the Integrations page.",
   },
   {
-    q: "Can attendees pay through EVENTLAUNCH?",
+    q: "Can attendees pay through EVENTRY?",
     a: "Free events work out of the box today. Paid ticketing via Stripe is currently in private beta — ping us if you want early access.",
   },
   {
@@ -111,7 +111,7 @@ const FAQS = [
 const features = [
   {
     title: "Pages in minutes",
-    description: "Beautiful registration pages that make your event shine — no design skills needed.",
+    description: "Beautiful registration pages that make your event shine  no design skills needed.",
     illustrationColor: "bg-[hsl(340,75%,95%)]",
   },
   {
@@ -161,8 +161,8 @@ function IllustrationPages({ accents }: { accents: BentoAccents }) {
         <div className="p-3 space-y-2.5">
           <h4 className="text-[11px] font-bold text-foreground truncate">Vibe coding summit 2026</h4>
           <div className="flex items-center gap-2 text-[9px] text-muted-foreground">
-            <span>📅 Apr 19, 2026</span>
-            <span>📍 San Francisco</span>
+            <span>📅 Oct 19, 2026</span>
+            <span>📍 Serena Hotel</span>
           </div>
           <div className="space-y-1.5">
             <div className="flex items-center gap-2">
@@ -683,7 +683,7 @@ const Landing = () => {
               Everything you need to run amazing events
             </h2>
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              From page creation to post-event analytics, eventspark has you covered.
+              From page creation to post event analytics, eventspark has you covered.
             </p>
           </motion.div>
 
