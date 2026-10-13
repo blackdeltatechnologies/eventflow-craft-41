@@ -2,8 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap');
-
 @layer base {
   :root {
     --background: 0 0% 98%;
@@ -40,6 +38,16 @@
     --success-foreground: 0 0% 100%;
     --warning: 38 80% 55%;
     --warning-foreground: 0 0% 100%;
+
+    --photo-foreground: 0 0% 100%;
+    --photo-shade: 240 25% 6%;
+    --launch-lime: 76 83% 76%;
+    --launch-lime-foreground: 90 25% 16%;
+    --launch-blue: 218 80% 56%;
+    --launch-blue-soft: 218 85% 96%;
+    --launch-rose-soft: 340 80% 96%;
+    --shadow-launch: 0 12px 40px hsl(240 25% 6% / 0.16);
+    --hero-scrim: linear-gradient(90deg, hsl(var(--photo-shade) / 0.86), hsl(var(--photo-shade) / 0.5) 45%, hsl(var(--photo-shade) / 0.04) 100%);
 
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 240 30% 14%;
@@ -80,6 +88,9 @@
     --input: 240 15% 20%;
     --ring: 340 75% 58%;
 
+    --launch-blue-soft: 218 30% 18%;
+    --launch-rose-soft: 340 25% 18%;
+
     --sidebar-background: 240 25% 8%;
     --sidebar-foreground: 240 5% 85%;
     --sidebar-primary: 340 75% 58%;
@@ -110,4 +121,25 @@
   .prose-readable {
     max-width: 70ch;
   }
+
+  .launch-hero-scrim { background: var(--hero-scrim); }
+  .launch-shadow { box-shadow: var(--shadow-launch); }
+  .launch-marquee { animation: launch-marquee 34s linear infinite; }
+  .launch-marquee:hover { animation-play-state: paused; }
+  .launch-section { scroll-margin-top: 90px; }
+  .launch-display { letter-spacing: 0; }
+}
+
+@keyframes launch-marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+@media (max-width: 639px) {
+  .launch-hero-scrim { background: hsl(var(--photo-shade) / 0.57); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .launch-marquee { animation: none; }
+  html { scroll-behavior: auto; }
 }
