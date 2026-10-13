@@ -18,6 +18,14 @@ export default {
         display: ['"Bricolage Grotesque"', "system-ui", "sans-serif"],
       },
       colors: {
+        photo: { foreground: "hsl(var(--photo-foreground))", shade: "hsl(var(--photo-shade))" },
+        launch: {
+          lime: "hsl(var(--launch-lime))",
+          "lime-foreground": "hsl(var(--launch-lime-foreground))",
+          blue: "hsl(var(--launch-blue))",
+          "blue-soft": "hsl(var(--launch-blue-soft))",
+          "rose-soft": "hsl(var(--launch-rose-soft))",
+        },
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
