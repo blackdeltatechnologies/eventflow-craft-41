@@ -130,6 +130,8 @@ const Auth = () => {
                   {loading ? "Signing in…" : "Sign in"}
                 </Button>
               </form>
+            </TabsContent>
+
 
 
             <TabsContent value="signup" className="mt-0">
