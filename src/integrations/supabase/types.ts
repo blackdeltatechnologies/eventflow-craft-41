@@ -168,6 +168,48 @@ export type Database = {
           },
         ]
       }
+      integrations: {
+        Row: {
+          created_at: string
+          enabled: boolean
+          events: string[]
+          id: string
+          last_status: string | null
+          last_triggered_at: string | null
+          name: string
+          provider: string
+          updated_at: string
+          user_id: string
+          webhook_url: string
+        }
+        Insert: {
+          created_at?: string
+          enabled?: boolean
+          events?: string[]
+          id?: string
+          last_status?: string | null
+          last_triggered_at?: string | null
+          name?: string
+          provider: string
+          updated_at?: string
+          user_id: string
+          webhook_url: string
+        }
+        Update: {
+          created_at?: string
+          enabled?: boolean
+          events?: string[]
+          id?: string
+          last_status?: string | null
+          last_triggered_at?: string | null
+          name?: string
+          provider?: string
+          updated_at?: string
+          user_id?: string
+          webhook_url?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
