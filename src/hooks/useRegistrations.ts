@@ -67,6 +67,9 @@ export function useCheckInRegistration() {
         .maybeSingle();
       if (error) throw error;
       if (!data) throw new Error("Registration not found for this event");
+      supabase.functions
+        .invoke("dispatch-integrations", { body: { action: "checkin", registration_id: id } })
+        .catch(() => {});
       return data;
     },
     onSuccess: () => {

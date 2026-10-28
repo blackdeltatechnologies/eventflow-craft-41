@@ -247,6 +247,11 @@ const Register = () => {
       setRegistrationId(newId as unknown as string);
       setSubmitted(true);
 
+      // Notify the organizer's connected tools (webhooks, Slack, Discord)
+      supabase.functions
+        .invoke("dispatch-integrations", { body: { action: "registration", registration_id: newId } })
+        .catch(() => {});
+
       // Fire-and-forget confirmation email. Silently skips if email infra isn't set up yet.
       const recipientEmail = formData["Email Address"] || formData["Email"] || formData["email"];
       if (recipientEmail) {

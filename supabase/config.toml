@@ -1,1 +1,4 @@
 project_id = "acaigpvsapdnqjmsnqwi"
+
+[functions.dispatch-integrations]
+verify_jwt = false
