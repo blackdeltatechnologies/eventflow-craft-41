@@ -24,6 +24,8 @@ export default function CheckIn() {
   const [lastScanned, setLastScanned] = useState<{ ok: boolean; text: string } | null>(null);
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const lockRef = useRef<string | null>(null);
+  const regsRef = useRef(registrations);
+  regsRef.current = registrations;
 
   const stopScanner = async () => {
     if (scannerRef.current) {
@@ -54,10 +56,11 @@ export default function CheckIn() {
     if (!id) return;
     if (lockRef.current === regId) return;
     lockRef.current = regId;
-    const existing = registrations?.find((r) => r.id === regId);
+    const regs = regsRef.current;
+    const existing = regs?.find((r) => r.id === regId);
     const exData = existing?.data as Record<string, string> | undefined;
     const exName = exData?.["Full Name"] || exData?.["Name"] || exData?.["Email Address"] || exData?.["Email"] || "Attendee";
-    if (registrations && !existing) {
+    if (regs && !existing) {
       playError();
       setLastScanned({ ok: false, text: "Ticket not found for this event" });
       toast.error("Ticket not found for this event");
