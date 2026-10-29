@@ -307,6 +307,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      find_registration_by_email: {
+        Args: { p_email: string; p_event_id: string }
+        Returns: {
+          attendee_name: string
+          id: string
+          status: Database["public"]["Enums"]["registration_status"]
+        }[]
+      }
       get_registration_count: { Args: { p_event_id: string }; Returns: number }
       has_role: {
         Args: {
