@@ -5,10 +5,11 @@ import { useRegistrationsByEvent, useCheckInRegistration } from "@/hooks/useRegi
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Camera, CameraOff, CheckCircle2, Loader2, Search, UserCheck } from "lucide-react";
+import { ArrowLeft, Camera, CameraOff, CheckCircle2, Loader2, Search, UserCheck, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { Html5Qrcode } from "html5-qrcode";
+import { playError, playSuccess, unlockAudio } from "@/lib/checkinSounds";
 
 const SCANNER_ID = "checkin-qr-reader";
 
@@ -20,9 +21,11 @@ export default function CheckIn() {
 
   const [scanning, setScanning] = useState(false);
   const [search, setSearch] = useState("");
-  const [lastScanned, setLastScanned] = useState<string | null>(null);
+  const [lastScanned, setLastScanned] = useState<{ ok: boolean; text: string } | null>(null);
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const lockRef = useRef<string | null>(null);
+  const regsRef = useRef(registrations);
+  regsRef.current = registrations;
 
   const stopScanner = async () => {
     if (scannerRef.current) {
@@ -53,13 +56,35 @@ export default function CheckIn() {
     if (!id) return;
     if (lockRef.current === regId) return;
     lockRef.current = regId;
+    const regs = regsRef.current;
+    const existing = regs?.find((r) => r.id === regId);
+    const exData = existing?.data as Record<string, string> | undefined;
+    const exName = exData?.["Full Name"] || exData?.["Name"] || exData?.["Email Address"] || exData?.["Email"] || "Attendee";
+    if (regs && !existing) {
+      playError();
+      setLastScanned({ ok: false, text: "Ticket not found for this event" });
+      toast.error("Ticket not found for this event");
+      setTimeout(() => { lockRef.current = null; }, 2000);
+      return;
+    }
+    if (existing && (existing as any).checked_in_at) {
+      playError();
+      const at = format(new Date((existing as any).checked_in_at), "p");
+      setLastScanned({ ok: false, text: `${exName} already checked in at ${at}` });
+      toast.warning(`${exName} already checked in at ${at}`);
+      setTimeout(() => { lockRef.current = null; }, 2000);
+      return;
+    }
     try {
       const reg = await checkIn.mutateAsync({ id: regId, eventId: id });
       const data = (reg as any).data as Record<string, string> | undefined;
       const name = data?.["Full Name"] || data?.["Name"] || data?.["Email Address"] || data?.["Email"] || "Attendee";
-      setLastScanned(`${name} checked in`);
+      playSuccess();
+      setLastScanned({ ok: true, text: `${name} checked in` });
       toast.success(`✓ ${name} checked in`);
     } catch (err: any) {
+      playError();
+      setLastScanned({ ok: false, text: err.message || "Check-in failed" });
       toast.error(err.message || "Check-in failed");
     } finally {
       setTimeout(() => { lockRef.current = null; }, 2000);
@@ -67,6 +92,7 @@ export default function CheckIn() {
   };
 
   const startScanner = async () => {
+    unlockAudio();
     setScanning(true);
     setTimeout(async () => {
       try {
@@ -156,8 +182,8 @@ export default function CheckIn() {
             </div>
           )}
           {lastScanned && (
-            <div className="mt-4 p-3 rounded-xl bg-success/10 text-success text-sm flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4" /> {lastScanned}
+            <div className={`mt-4 p-3 rounded-xl text-sm flex items-center gap-2 ${lastScanned.ok ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"}`}>
+              {lastScanned.ok ? <CheckCircle2 className="w-4 h-4" /> : <XCircle className="w-4 h-4" />} {lastScanned.text}
             </div>
           )}
         </div>
