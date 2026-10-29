@@ -5,7 +5,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useParams } from "react-router-dom";
-import { CalendarDays, MapPin, Video, Globe, Loader2, CheckCircle2, Zap } from "lucide-react";
+import { CalendarDays, MapPin, Video, Globe, Loader2, CheckCircle2, Zap, Download, CalendarPlus, Ticket } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { buildIcs, buildTicketPng, deliverFile, downloadBlob, googleCalendarUrl, safeFilename } from "@/lib/ticket";
 import { useEventBySlug, Event } from "@/hooks/useEvents";
 import { useFormFields } from "@/hooks/useFormFields";
 import { useCreateRegistration } from "@/hooks/useRegistrations";
@@ -53,13 +55,34 @@ function formatEventDateTime(event: Event) {
 
 // ─── Extracted stable components ───
 
-const SuccessCard = ({ brandColor, eventName, registrationId }: { brandColor: string; eventName: string; registrationId: string | null }) => {
+const SuccessCard = ({ brandColor, event, attendeeName, registrationId, isLookup }: { brandColor: string; event: Event; attendeeName: string; registrationId: string | null; isLookup: boolean }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [ticket, setTicket] = useState<Blob | null>(null);
+  const eventName = event.name;
+  const dateLabel = formatEventDateTime(event);
+  const gcal = googleCalendarUrl(event);
+  const pageUrl = typeof window !== "undefined" ? window.location.href : undefined;
+  const ics = registrationId ? buildIcs(event, registrationId, pageUrl) : null;
+
   useEffect(() => {
     if (canvasRef.current && registrationId) {
       QRCode.toCanvas(canvasRef.current, registrationId, { width: 180, margin: 1, color: { dark: "#000", light: "#fff" } });
     }
   }, [registrationId]);
+
+  // Pre-generate the ticket so the download click stays synchronous (works on iOS).
+  useEffect(() => {
+    if (!registrationId) return;
+    let cancelled = false;
+    buildTicketPng({ event, registrationId, attendeeName, dateLabel, brandColor })
+      .then((b) => { if (!cancelled) setTicket(b); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [registrationId]);
+
+  const fileBase = safeFilename(eventName);
+
   return (
     <motion.div key="success" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-lg mx-auto">
       <Card className="border-border shadow-2xl">
@@ -67,8 +90,10 @@ const SuccessCard = ({ brandColor, eventName, registrationId }: { brandColor: st
           <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", delay: 0.2 }}>
             <CheckCircle2 className="w-16 h-16 mx-auto mb-4" style={{ color: brandColor }} />
           </motion.div>
-          <h2 className="text-2xl font-display font-bold mb-2">You're Registered!</h2>
-          <p className="text-muted-foreground mb-6">Thank you for registering for <strong>{eventName}</strong>. A confirmation email is on its way.</p>
+          <h2 className="text-2xl font-display font-bold mb-2">{isLookup ? "Here's your ticket" : "You're Registered!"}</h2>
+          <p className="text-muted-foreground mb-6">
+            {isLookup ? <>Your pass for <strong>{eventName}</strong>{attendeeName ? `, ${attendeeName}` : ""}.</> : <>Thank you for registering for <strong>{eventName}</strong>. Save your ticket below.</>}
+          </p>
           {registrationId && (
             <div className="border-t border-border pt-6">
               <p className="text-xs text-muted-foreground mb-3 font-medium uppercase tracking-wide">Your check-in pass</p>
@@ -76,11 +101,103 @@ const SuccessCard = ({ brandColor, eventName, registrationId }: { brandColor: st
                 <canvas ref={canvasRef} />
               </div>
               <p className="text-xs text-muted-foreground mt-3">Show this QR code at the door.</p>
+
+              <div className="mt-6 grid gap-2">
+                <Button
+                  className="rounded-full h-11"
+                  disabled={!ticket}
+                  onClick={() => ticket && deliverFile(ticket, `${fileBase}-ticket.png`)}
+                >
+                  {ticket ? <Download className="w-4 h-4 mr-2" /> : <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                  Download ticket
+                </Button>
+                {(gcal || ics) && (
+                  <div className="grid grid-cols-2 gap-2">
+                    {gcal && (
+                      <Button asChild variant="outline" className="rounded-full h-11">
+                        <a href={gcal} target="_blank" rel="noopener noreferrer">
+                          <CalendarPlus className="w-4 h-4 mr-2" /> Google
+                        </a>
+                      </Button>
+                    )}
+                    {ics && (
+                      <Button
+                        variant="outline"
+                        className="rounded-full h-11"
+                        onClick={() => downloadBlob(new Blob([ics], { type: "text/calendar;charset=utf-8" }), `${fileBase}.ics`)}
+                      >
+                        <CalendarDays className="w-4 h-4 mr-2" /> Apple / Outlook
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </CardContent>
       </Card>
     </motion.div>
+  );
+};
+
+const FindTicketDialog = ({ eventId, onFound }: { eventId: string; onFound: (id: string, name: string) => void }) => {
+  const [open, setOpen] = useState(false);
+  const [email, setEmail] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [notFound, setNotFound] = useState(false);
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const value = email.trim();
+    if (!/^\S+@\S+\.\S+$/.test(value)) {
+      toast.error("Enter a valid email address.");
+      return;
+    }
+    setLoading(true);
+    setNotFound(false);
+    const { data, error } = await (supabase.rpc as any)("find_registration_by_email", { p_event_id: eventId, p_email: value });
+    setLoading(false);
+    if (error) {
+      toast.error("Couldn't look up your ticket. Please try again.");
+      return;
+    }
+    const row = (data as { id: string; attendee_name: string }[] | null)?.[0];
+    if (!row) {
+      setNotFound(true);
+      return;
+    }
+    setOpen(false);
+    onFound(row.id, row.attendee_name || "");
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <button className="fixed bottom-4 right-4 z-40 inline-flex items-center gap-2 rounded-full bg-card text-foreground shadow-lg px-4 h-11 text-sm font-medium hover:bg-muted transition-colors">
+          <Ticket className="w-4 h-4" /> Already registered? Find your ticket
+        </button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Find your ticket</DialogTitle>
+          <DialogDescription>Enter the email you registered with to get your check-in pass.</DialogDescription>
+        </DialogHeader>
+        <form onSubmit={submit} className="space-y-3">
+          <Input
+            type="email"
+            placeholder="you@example.com"
+            className="rounded-full h-11"
+            value={email}
+            onChange={(e) => { setEmail(e.target.value); setNotFound(false); }}
+            autoFocus
+          />
+          {notFound && <p className="text-sm text-destructive">No registration found for that email.</p>}
+          <Button type="submit" className="w-full rounded-full h-11" disabled={loading}>
+            {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />} Show my ticket
+          </Button>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 };
 
@@ -205,6 +322,8 @@ const Register = () => {
   const [consent, setConsent] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [registrationId, setRegistrationId] = useState<string | null>(null);
+  const [attendeeName, setAttendeeName] = useState("");
+  const [lookedUp, setLookedUp] = useState(true);
 
   const handleFieldChange = useCallback((label: string, value: string) => {
     setFormData(prev => ({ ...prev, [label]: value }));
@@ -245,6 +364,8 @@ const Register = () => {
     try {
       const newId = await createReg.mutateAsync({ event_id: event.id, data: formData });
       setRegistrationId(newId as unknown as string);
+      setAttendeeName(formData["Full Name"] || formData["Name"] || "");
+      setLookedUp(false);
       setSubmitted(true);
 
       // Notify the organizer's connected tools (webhooks, Slack, Discord)
@@ -295,13 +416,23 @@ const Register = () => {
   const wrapDark = (content: React.ReactNode) => (
     <div className={isDark ? "dark" : ""}>
       {content}
+      {!submitted && (
+        <FindTicketDialog
+          eventId={event.id}
+          onFound={(id, name) => {
+            setRegistrationId(id);
+            setAttendeeName(name);
+            setSubmitted(true);
+          }}
+        />
+      )}
     </div>
   );
 
   if (submitted) {
     return wrapDark(
       <div className="min-h-screen flex items-center justify-center px-4 py-12 bg-background text-foreground" style={{ background: isDark ? undefined : `linear-gradient(135deg, ${brandColor}15, ${brandColor}05)` }}>
-        <SuccessCard brandColor={brandColor} eventName={event.name} registrationId={registrationId} />
+        <SuccessCard brandColor={brandColor} event={event} attendeeName={attendeeName} registrationId={registrationId} isLookup={lookedUp} />
       </div>
     );
   }
