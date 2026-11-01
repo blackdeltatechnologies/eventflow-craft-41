@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
 import { useAuth } from "@/contexts/AuthContext";
+import { copyName } from "@/lib/ticketTiers";
 
 export type Event = Tables<"events">;
 
@@ -105,5 +106,53 @@ export function useDeleteEvent() {
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["events"] }),
+  });
+}
+
+/** Clones an event (branding, settings, form fields, ticket types) into a new draft without dates. */
+export function useDuplicateEvent() {
+  const qc = useQueryClient();
+  const { user } = useAuth();
+  return useMutation({
+    mutationFn: async (source: Event) => {
+      const { id, created_at, updated_at, slug, status, event_date, event_end_date, registration_deadline, user_id, ...rest } = source;
+      const name = copyName(source.name);
+      const { data, error } = await supabase.from("events").insert({
+        ...rest,
+        name,
+        slug: generateSlug(name),
+        status: "draft",
+        user_id: user!.id,
+      }).select().single();
+      if (error) throw error;
+      const { data: fields } = await supabase.from("form_fields").select("*").eq("event_id", id);
+      if (fields && fields.length) {
+        const { error: fErr } = await supabase.from("form_fields").insert(
+          fields.map(({ id: _id, event_id: _e, ...f }) => ({ ...f, event_id: data.id }))
+        );
+        if (fErr) throw fErr;
+      }
+      return data as Event;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["events"] }),
+  });
+}
+
+export type PublicEvent = Event & { organizer?: { company: string | null; company_slug: string | null } | null };
+
+/** All live events for the public directory. */
+export function usePublicEvents() {
+  return useQuery({
+    queryKey: ["public-events"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("events").select("*").eq("status", "live").order("event_date", { ascending: true, nullsFirst: false }).limit(200);
+      if (error) throw error;
+      const ids = [...new Set((data ?? []).map((e) => e.user_id))];
+      const { data: profiles } = ids.length
+        ? await supabase.from("profiles").select("id, company, company_slug").in("id", ids).not("company_slug", "is", null)
+        : { data: [] as { id: string; company: string | null; company_slug: string | null }[] };
+      const byId = new Map((profiles ?? []).map((p) => [p.id, p]));
+      return (data ?? []).map((e) => ({ ...e, organizer: byId.get(e.user_id) ?? null })) as PublicEvent[];
+    },
   });
 }
