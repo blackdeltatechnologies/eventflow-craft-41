@@ -72,6 +72,7 @@ export type Database = {
           status: Database["public"]["Enums"]["event_status"]
           template: string | null
           ticket_price: number | null
+          ticket_tiers: Json
           timezone: string | null
           updated_at: string
           user_id: string
@@ -98,6 +99,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["event_status"]
           template?: string | null
           ticket_price?: number | null
+          ticket_tiers?: Json
           timezone?: string | null
           updated_at?: string
           user_id: string
@@ -124,6 +126,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["event_status"]
           template?: string | null
           ticket_price?: number | null
+          ticket_tiers?: Json
           timezone?: string | null
           updated_at?: string
           user_id?: string
@@ -257,6 +260,7 @@ export type Database = {
           event_id: string
           id: string
           status: Database["public"]["Enums"]["registration_status"]
+          ticket_tier: string | null
         }
         Insert: {
           checked_in_at?: string | null
@@ -265,6 +269,7 @@ export type Database = {
           event_id: string
           id?: string
           status?: Database["public"]["Enums"]["registration_status"]
+          ticket_tier?: string | null
         }
         Update: {
           checked_in_at?: string | null
@@ -273,6 +278,7 @@ export type Database = {
           event_id?: string
           id?: string
           status?: Database["public"]["Enums"]["registration_status"]
+          ticket_tier?: string | null
         }
         Relationships: [
           {
@@ -313,9 +319,17 @@ export type Database = {
           attendee_name: string
           id: string
           status: Database["public"]["Enums"]["registration_status"]
+          ticket_tier: string
         }[]
       }
       get_registration_count: { Args: { p_event_id: string }; Returns: number }
+      get_tier_counts: {
+        Args: { p_event_id: string }
+        Returns: {
+          count: number
+          tier: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -324,7 +338,7 @@ export type Database = {
         Returns: boolean
       }
       register_for_event: {
-        Args: { p_data: Json; p_event_id: string }
+        Args: { p_data: Json; p_event_id: string; p_tier?: string }
         Returns: string
       }
     }
