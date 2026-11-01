@@ -15,6 +15,7 @@ import EventDetailHeader from "@/components/event-detail/EventDetailHeader";
 import EventQuickInfo from "@/components/event-detail/EventQuickInfo";
 import EventAttendeesTable from "@/components/event-detail/EventAttendeesTable";
 import EventQRCode from "@/components/event-detail/EventQRCode";
+import TicketTiersEditor from "@/components/event-detail/TicketTiersEditor";
 
 const EventDetail = () => {
   const { id } = useParams();
@@ -192,7 +193,8 @@ const EventDetail = () => {
           </div>
         </TabsContent>
 
-        <TabsContent value="settings" className="mt-5">
+        <TabsContent value="settings" className="mt-5 space-y-5">
+          <TicketTiersEditor event={event} onSave={(ticket_tiers) => updateEvent.mutateAsync({ id: event.id, ticket_tiers })} />
           <div className="bg-card rounded-xl p-5 sm:p-6 space-y-4">
             <h3 className="font-display font-semibold">Event settings</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

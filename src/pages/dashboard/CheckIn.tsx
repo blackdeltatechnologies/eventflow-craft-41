@@ -79,9 +79,11 @@ export default function CheckIn() {
       const reg = await checkIn.mutateAsync({ id: regId, eventId: id });
       const data = (reg as any).data as Record<string, string> | undefined;
       const name = data?.["Full Name"] || data?.["Name"] || data?.["Email Address"] || data?.["Email"] || "Attendee";
+      const tier = (reg as any).ticket_tier as string | null;
+      const label = tier ? `${name} · ${tier}` : name;
       playSuccess();
-      setLastScanned({ ok: true, text: `${name} checked in` });
-      toast.success(`✓ ${name} checked in`);
+      setLastScanned({ ok: true, text: `${label} checked in` });
+      toast.success(`✓ ${label} checked in`);
     } catch (err: any) {
       playError();
       setLastScanned({ ok: false, text: err.message || "Check-in failed" });

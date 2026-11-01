@@ -115,6 +115,7 @@ export async function buildTicketPng(opts: {
   attendeeName?: string;
   dateLabel?: string;
   brandColor: string;
+  tier?: string | null;
 }): Promise<Blob> {
   const W = 900, H = 1400;
   const c = document.createElement("canvas");
@@ -144,6 +145,7 @@ export async function buildTicketPng(opts: {
     y += 130;
   };
   row("Attendee", opts.attendeeName);
+  row("Ticket", opts.tier || undefined);
   row("When", opts.dateLabel);
   row("Where", opts.event.location_value || undefined);
 

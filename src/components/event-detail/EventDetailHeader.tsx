@@ -2,7 +2,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { ArrowLeft, ExternalLink, Copy, MoreVertical, QrCode } from "lucide-react";
+import { ArrowLeft, ExternalLink, Copy, MoreVertical, QrCode, CopyPlus, Loader2 } from "lucide-react";
+import { useDuplicateEvent } from "@/hooks/useEvents";
 import { useNavigate } from "react-router-dom";
 import { Tables } from "@/integrations/supabase/types";
 import { toast } from "sonner";
@@ -21,6 +22,16 @@ const statusColors: Record<string, string> = {
 
 export default function EventDetailHeader({ event, onStatusChange }: Props) {
   const navigate = useNavigate();
+  const duplicate = useDuplicateEvent();
+  const handleDuplicate = async () => {
+    try {
+      const copy = await duplicate.mutateAsync(event);
+      toast.success("Event duplicated as a draft — set the new date");
+      navigate(`/dashboard/events/${copy.id}`);
+    } catch (e: any) {
+      toast.error(e.message || "Couldn't duplicate event");
+    }
+  };
 
   const handleCopyLink = () => {
     const url = `${window.location.origin}/register/${event.slug}`;
@@ -68,6 +79,9 @@ export default function EventDetailHeader({ event, onStatusChange }: Props) {
               <ExternalLink className="w-3 h-3 mr-1" /> Preview
             </a>
           </Button>
+          <Button variant="outline" size="sm" className="h-8 text-xs rounded-full" onClick={handleDuplicate} disabled={duplicate.isPending}>
+            {duplicate.isPending ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <CopyPlus className="w-3 h-3 mr-1" />} Duplicate
+          </Button>
           <Button size="sm" className="h-8 text-xs rounded-full" onClick={() => navigate(`/dashboard/events/${event.id}/check-in`)}>
             <QrCode className="w-3 h-3 mr-1" /> Check-in
           </Button>
@@ -90,6 +104,9 @@ export default function EventDetailHeader({ event, onStatusChange }: Props) {
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => onStatusChange("past")}>
                 Set Past
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleDuplicate}>
+                <CopyPlus className="w-3.5 h-3.5 mr-2" /> Duplicate
               </DropdownMenuItem>
               <DropdownMenuItem onClick={handleCopyLink}>
                 <Copy className="w-3.5 h-3.5 mr-2" /> Copy Link

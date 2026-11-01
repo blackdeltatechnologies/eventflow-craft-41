@@ -16,6 +16,8 @@ import QRCode from "qrcode";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { Tables } from "@/integrations/supabase/types";
+import { parseTiers, tierRemaining, TicketTier } from "@/lib/ticketTiers";
+import { useQuery } from "@tanstack/react-query";
 
 type FormField = Tables<"form_fields">;
 
@@ -55,7 +57,7 @@ function formatEventDateTime(event: Event) {
 
 // ─── Extracted stable components ───
 
-const SuccessCard = ({ brandColor, event, attendeeName, registrationId, isLookup }: { brandColor: string; event: Event; attendeeName: string; registrationId: string | null; isLookup: boolean }) => {
+const SuccessCard = ({ brandColor, event, attendeeName, registrationId, isLookup, tier }: { brandColor: string; event: Event; attendeeName: string; registrationId: string | null; isLookup: boolean; tier?: string | null }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [ticket, setTicket] = useState<Blob | null>(null);
   const eventName = event.name;
@@ -74,7 +76,7 @@ const SuccessCard = ({ brandColor, event, attendeeName, registrationId, isLookup
   useEffect(() => {
     if (!registrationId) return;
     let cancelled = false;
-    buildTicketPng({ event, registrationId, attendeeName, dateLabel, brandColor })
+    buildTicketPng({ event, registrationId, attendeeName, dateLabel, brandColor, tier })
       .then((b) => { if (!cancelled) setTicket(b); })
       .catch(() => {});
     return () => { cancelled = true; };
@@ -97,6 +99,7 @@ const SuccessCard = ({ brandColor, event, attendeeName, registrationId, isLookup
           {registrationId && (
             <div className="border-t border-border pt-6">
               <p className="text-xs text-muted-foreground mb-3 font-medium uppercase tracking-wide">Your check-in pass</p>
+              {tier && <p className="inline-block mb-3 rounded-full px-3 py-1 text-xs font-semibold text-white" style={{ background: brandColor }}>{tier}</p>}
               <div className="inline-block bg-white p-3 rounded-xl">
                 <canvas ref={canvasRef} />
               </div>
@@ -140,7 +143,7 @@ const SuccessCard = ({ brandColor, event, attendeeName, registrationId, isLookup
   );
 };
 
-const FindTicketDialog = ({ eventId, onFound }: { eventId: string; onFound: (id: string, name: string) => void }) => {
+const FindTicketDialog = ({ eventId, onFound }: { eventId: string; onFound: (id: string, name: string, tier: string | null) => void }) => {
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
@@ -161,13 +164,13 @@ const FindTicketDialog = ({ eventId, onFound }: { eventId: string; onFound: (id:
       toast.error("Couldn't look up your ticket. Please try again.");
       return;
     }
-    const row = (data as { id: string; attendee_name: string }[] | null)?.[0];
+    const row = (data as { id: string; attendee_name: string; ticket_tier: string | null }[] | null)?.[0];
     if (!row) {
       setNotFound(true);
       return;
     }
     setOpen(false);
-    onFound(row.id, row.attendee_name || "");
+    onFound(row.id, row.attendee_name || "", row.ticket_tier ?? null);
   };
 
   return (
@@ -255,8 +258,16 @@ const RegistrationForm = ({
   onSubmit,
   isPending,
   brandColor,
+  tiers = [],
+  tierCounts = {},
+  selectedTier = null,
+  onTierChange = () => {},
   className = "",
 }: {
+  tiers?: TicketTier[];
+  tierCounts?: Record<string, number>;
+  selectedTier?: string | null;
+  onTierChange?: (name: string) => void;
   formFields: FormField[] | undefined;
   formData: Record<string, string>;
   onFieldChange: (label: string, value: string) => void;
@@ -268,6 +279,38 @@ const RegistrationForm = ({
   className?: string;
 }) => (
   <form onSubmit={onSubmit} className={`space-y-4 ${className}`}>
+    {tiers.length > 0 && (
+      <fieldset className="space-y-2">
+        <legend className="text-sm font-medium mb-2">Choose your ticket *</legend>
+        <div className="grid gap-2" role="radiogroup">
+          {tiers.map((t) => {
+            const left = tierRemaining(t, tierCounts[t.name] || 0);
+            const soldOut = left === 0;
+            const active = selectedTier === t.name;
+            return (
+              <button
+                key={t.name}
+                type="button"
+                role="radio"
+                aria-checked={active}
+                disabled={soldOut}
+                onClick={() => onTierChange(t.name)}
+                className={`text-left rounded-2xl p-4 min-h-[44px] transition-colors bg-muted/60 hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed ${active ? "ring-2" : ""}`}
+                style={active ? { boxShadow: `0 0 0 2px ${brandColor}` } : undefined}
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <span className="font-semibold">{t.name}</span>
+                  <span className="text-xs text-muted-foreground shrink-0">
+                    {soldOut ? "Sold out" : left !== null ? `${left} left` : ""}
+                  </span>
+                </div>
+                {t.description && <p className="text-xs text-muted-foreground mt-1">{t.description}</p>}
+              </button>
+            );
+          })}
+        </div>
+      </fieldset>
+    )}
     {formFields?.map((field) => (
       <div key={field.id} className="space-y-2">
         <Label>{field.label}{field.required && " *"}</Label>
@@ -324,6 +367,18 @@ const Register = () => {
   const [registrationId, setRegistrationId] = useState<string | null>(null);
   const [attendeeName, setAttendeeName] = useState("");
   const [lookedUp, setLookedUp] = useState(true);
+  const [selectedTier, setSelectedTier] = useState<string | null>(null);
+  const [savedTier, setSavedTier] = useState<string | null>(null);
+  const { data: tierCounts } = useQuery({
+    queryKey: ["tier-counts", event?.id],
+    enabled: !!event?.id && parseTiers((event as any)?.ticket_tiers).length > 0,
+    queryFn: async () => {
+      const { data } = await (supabase.rpc as any)("get_tier_counts", { p_event_id: event!.id });
+      const map: Record<string, number> = {};
+      (data as { tier: string; count: number }[] | null)?.forEach((r) => { map[r.tier] = r.count; });
+      return map;
+    },
+  });
 
   const handleFieldChange = useCallback((label: string, value: string) => {
     setFormData(prev => ({ ...prev, [label]: value }));
@@ -350,6 +405,8 @@ const Register = () => {
     );
   }
 
+  const tiers = parseTiers((event as any).ticket_tiers);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!consent) {
@@ -361,8 +418,13 @@ const Register = () => {
       toast.error(`Please fill in: ${missing.map(f => f.label).join(", ")}`);
       return;
     }
+    if (tiers.length > 0 && !selectedTier) {
+      toast.error("Please choose a ticket type.");
+      return;
+    }
     try {
-      const newId = await createReg.mutateAsync({ event_id: event.id, data: formData });
+      const newId = await createReg.mutateAsync({ event_id: event.id, data: formData, tier: selectedTier });
+      setSavedTier(tiers.length > 0 ? selectedTier : null);
       setRegistrationId(newId as unknown as string);
       setAttendeeName(formData["Full Name"] || formData["Name"] || "");
       setLookedUp(false);
@@ -411,6 +473,10 @@ const Register = () => {
     onSubmit: handleSubmit,
     isPending: createReg.isPending,
     brandColor,
+    tiers,
+    tierCounts: tierCounts || {},
+    selectedTier,
+    onTierChange: setSelectedTier,
   };
 
   const wrapDark = (content: React.ReactNode) => (
@@ -419,7 +485,8 @@ const Register = () => {
       {!submitted && (
         <FindTicketDialog
           eventId={event.id}
-          onFound={(id, name) => {
+          onFound={(id, name, t) => {
+            setSavedTier(t);
             setRegistrationId(id);
             setAttendeeName(name);
             setSubmitted(true);
@@ -432,7 +499,7 @@ const Register = () => {
   if (submitted) {
     return wrapDark(
       <div className="min-h-screen flex items-center justify-center px-4 py-12 bg-background text-foreground" style={{ background: isDark ? undefined : `linear-gradient(135deg, ${brandColor}15, ${brandColor}05)` }}>
-        <SuccessCard brandColor={brandColor} event={event} attendeeName={attendeeName} registrationId={registrationId} isLookup={lookedUp} />
+        <SuccessCard brandColor={brandColor} event={event} attendeeName={attendeeName} registrationId={registrationId} isLookup={lookedUp} tier={savedTier} />
       </div>
     );
   }

@@ -22,6 +22,7 @@ import Integrations from "./pages/dashboard/Integrations";
 import SettingsPage from "./pages/dashboard/SettingsPage";
 import CheckIn from "./pages/dashboard/CheckIn";
 import NotFound from "./pages/NotFound";
+import EventsDirectory from "./pages/EventsDirectory";
 
 const queryClient = new QueryClient();
 
@@ -46,6 +47,7 @@ const App = () => (
               {/* Public */}
               <Route path="/" element={<Landing />} />
               <Route path="/auth" element={<Auth />} />
+              <Route path="/events" element={<EventsDirectory />} />
               <Route path="/register/:slug" element={<Register />} />
               <Route path="/company/:companySlug" element={<CompanyPage />} />
 
