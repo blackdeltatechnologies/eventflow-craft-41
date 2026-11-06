@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { motion, AnimatePresence, MotionConfig, useReducedMotion, useScroll, useTransform } from "framer-motion";
 import { ArrowRight, ArrowUpRight, ArrowDown, Check, Sparkles, Ticket, ScanLine, BarChart3, Menu, X, CalendarDays, MapPin, Users, CheckCircle2 } from "lucide-react";
 import { Logo } from "@/components/Logo";
+import { FeaturedServices } from "@/components/landing/FeaturedServices";
 import { Button } from "@/components/ui/button";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import heroPhoto from "@/assets/community-hero.jpg";
@@ -100,6 +101,8 @@ export default function Landing() {
         </div>
       </div>
     </section>
+
+    <FeaturedServices />
 
     <section id="possibilities" className="launch-section bg-card py-20 sm:py-28">
       <div className="max-w-7xl mx-auto px-5 sm:px-8">
