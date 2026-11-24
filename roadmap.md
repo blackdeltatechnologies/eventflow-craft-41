@@ -4,9 +4,8 @@
 - [x] Verify homepage links, images, and layout at desktop and phone sizes.
 
 # EasyPay ticket payments
-- [x] Obtain and securely store EasyPay application collection credentials (not payout credentials).
-- [ ] Confirm exact payment-response and completed/failed webhook JSON examples and signature encoding; API summary received, awaiting exact examples.
-- [ ] Deploy the payment notification endpoint, then securely configure its EasyPay webhook signing secret.
-- [ ] Add transactional orders, inventory reservations, payment auditing, and idempotent ticket issuance; blocked by provider contract verification.
-- [ ] Connect mobile-money checkout, verified payment notifications, customer tickets, and organizer sales reporting; blocked by exact provider examples and webhook signing setup.
-- [ ] Test success, failure, simulation, duplicate callbacks, inventory concurrency, and repeated check-ins end to end; blocked by working provider connection.
+- [x] Store EasyPay application keys.
+- [x] Deploy payment notification address (signature-checked, duplicates ignored).
+- [x] Ticket prices per type, mobile money checkout, tickets issued only after confirmed payment, unpaid tickets blocked at check-in.
+- [ ] Save EasyPay webhook signing secret; blocked on user pasting it.
+- [ ] End-to-end simulation test; blocked on signing secret and Callback URL set in EasyPay.
