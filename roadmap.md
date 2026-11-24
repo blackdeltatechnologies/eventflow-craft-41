@@ -7,5 +7,5 @@
 - [x] Store EasyPay application keys.
 - [x] Deploy payment notification address (signature-checked, duplicates ignored).
 - [x] Ticket prices per type, mobile money checkout, tickets issued only after confirmed payment, unpaid tickets blocked at check-in.
-- [ ] Save EasyPay webhook signing secret; blocked on user pasting it.
+- [x] Save EasyPay webhook signing secret.
 - [ ] End-to-end simulation test; blocked on signing secret and Callback URL set in EasyPay.
