@@ -213,6 +213,87 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_webhook_events: {
+        Row: {
+          event_id: string
+          event_name: string | null
+          payload: Json
+          received_at: string
+        }
+        Insert: {
+          event_id: string
+          event_name?: string | null
+          payload: Json
+          received_at?: string
+        }
+        Update: {
+          event_id?: string
+          event_name?: string | null
+          payload?: Json
+          received_at?: string
+        }
+        Relationships: []
+      }
+      payments: {
+        Row: {
+          amount: string
+          created_at: string
+          currency: string
+          easypay_reference: string | null
+          event_id: string
+          failure_reason: string | null
+          id: string
+          merchant_reference: string
+          payer_phone: string
+          registration_id: string
+          state: string
+          updated_at: string
+        }
+        Insert: {
+          amount: string
+          created_at?: string
+          currency?: string
+          easypay_reference?: string | null
+          event_id: string
+          failure_reason?: string | null
+          id?: string
+          merchant_reference: string
+          payer_phone: string
+          registration_id: string
+          state?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: string
+          created_at?: string
+          currency?: string
+          easypay_reference?: string | null
+          event_id?: string
+          failure_reason?: string | null
+          id?: string
+          merchant_reference?: string
+          payer_phone?: string
+          registration_id?: string
+          state?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
+            referencedRelation: "registrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -259,6 +340,7 @@ export type Database = {
           data: Json
           event_id: string
           id: string
+          payment_status: string | null
           status: Database["public"]["Enums"]["registration_status"]
           ticket_tier: string | null
         }
@@ -268,6 +350,7 @@ export type Database = {
           data?: Json
           event_id: string
           id?: string
+          payment_status?: string | null
           status?: Database["public"]["Enums"]["registration_status"]
           ticket_tier?: string | null
         }
@@ -277,6 +360,7 @@ export type Database = {
           data?: Json
           event_id?: string
           id?: string
+          payment_status?: string | null
           status?: Database["public"]["Enums"]["registration_status"]
           ticket_tier?: string | null
         }
@@ -320,6 +404,13 @@ export type Database = {
           id: string
           status: Database["public"]["Enums"]["registration_status"]
           ticket_tier: string
+        }[]
+      }
+      get_payment_status: {
+        Args: { p_reference: string }
+        Returns: {
+          registration_id: string
+          state: string
         }[]
       }
       get_registration_count: { Args: { p_event_id: string }; Returns: number }
