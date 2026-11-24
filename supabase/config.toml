@@ -2,3 +2,9 @@ project_id = "acaigpvsapdnqjmsnqwi"
 
 [functions.dispatch-integrations]
 verify_jwt = false
+
+[functions.easypay-initiate]
+verify_jwt = false
+
+[functions.easypay-webhook]
+verify_jwt = false

@@ -67,6 +67,15 @@ export default function CheckIn() {
       setTimeout(() => { lockRef.current = null; }, 2000);
       return;
     }
+    const payState = (existing as any)?.payment_status;
+    if (existing && (existing.status === "cancelled" || (payState && payState !== "paid"))) {
+      playError();
+      const why = payState === "pending" ? "payment not completed" : "ticket is not valid";
+      setLastScanned({ ok: false, text: `${exName}: ${why}` });
+      toast.error(`${exName}: ${why}`);
+      setTimeout(() => { lockRef.current = null; }, 2000);
+      return;
+    }
     if (existing && (existing as any).checked_in_at) {
       playError();
       const at = format(new Date((existing as any).checked_in_at), "p");

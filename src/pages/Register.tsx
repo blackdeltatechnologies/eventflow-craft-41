@@ -16,7 +16,7 @@ import QRCode from "qrcode";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { Tables } from "@/integrations/supabase/types";
-import { parseTiers, tierRemaining, TicketTier } from "@/lib/ticketTiers";
+import { parseTiers, tierRemaining, TicketTier, formatTzs } from "@/lib/ticketTiers";
 import { useQuery } from "@tanstack/react-query";
 
 type FormField = Tables<"form_fields">;
@@ -262,8 +262,14 @@ const RegistrationForm = ({
   tierCounts = {},
   selectedTier = null,
   onTierChange = () => {},
+  paidPrice = 0,
+  phone = "",
+  onPhoneChange = () => {},
   className = "",
 }: {
+  paidPrice?: number;
+  phone?: string;
+  onPhoneChange?: (v: string) => void;
   tiers?: TicketTier[];
   tierCounts?: Record<string, number>;
   selectedTier?: string | null;
@@ -299,7 +305,7 @@ const RegistrationForm = ({
                 style={active ? { boxShadow: `0 0 0 2px ${brandColor}` } : undefined}
               >
                 <div className="flex items-center justify-between gap-3">
-                  <span className="font-semibold">{t.name}</span>
+                  <span className="font-semibold">{t.name} <span className="font-normal text-muted-foreground">· {formatTzs(t.price)}</span></span>
                   <span className="text-xs text-muted-foreground shrink-0">
                     {soldOut ? "Sold out" : left !== null ? `${left} left` : ""}
                   </span>
@@ -323,6 +329,13 @@ const RegistrationForm = ({
         />
       </div>
     ))}
+    {paidPrice > 0 && (
+      <div className="space-y-2">
+        <Label htmlFor="mm-phone">Mobile money number (M-Pesa, Airtel, Mixx, HaloPesa) *</Label>
+        <Input id="mm-phone" type="tel" inputMode="tel" placeholder="0712345678" value={phone} onChange={(e) => onPhoneChange(e.target.value)} required />
+        <p className="text-xs text-muted-foreground">You'll get a prompt on this phone to pay {formatTzs(paidPrice)}.</p>
+      </div>
+    )}
     <div className="flex items-start gap-2 pt-2">
       <Checkbox id="gdpr" checked={consent} onCheckedChange={(c) => onConsentChange(!!c)} />
       <Label htmlFor="gdpr" className="text-xs text-muted-foreground leading-relaxed">
@@ -335,7 +348,7 @@ const RegistrationForm = ({
       style={{ background: `linear-gradient(135deg, ${brandColor}, ${brandColor}CC)` }}
       disabled={isPending}
     >
-      {isPending ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Registering…</> : "Register Now"}
+      {isPending ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> {paidPrice > 0 ? "Starting payment…" : "Registering…"}</> : paidPrice > 0 ? `Pay ${formatTzs(paidPrice)}` : "Register Now"}
     </Button>
   </form>
 );
@@ -354,6 +367,45 @@ const PoweredBy = () => (
   </p>
 );
 
+const PaymentWaiting = ({ reference, failed, onState, onRetry }: { reference: string; failed: boolean; onState: (s: string, regId: string | null) => void; onRetry: () => void }) => {
+  useEffect(() => {
+    if (failed) return;
+    let stop = false;
+    const started = Date.now();
+    const tick = async () => {
+      // Reads our own record, which only changes after EasyPay's verified notification.
+      const { data } = await (supabase.rpc as any)("get_payment_status", { p_reference: reference });
+      const row = (data as { state: string; registration_id: string }[] | null)?.[0];
+      if (stop) return;
+      if (row) onState(row.state, row.registration_id);
+      if (!row || !["COMPLETED", "FAILED", "CANCELLED", "EXPIRED", "AMOUNT_MISMATCH"].includes(row.state)) {
+        if (Date.now() - started < 15 * 60 * 1000) setTimeout(tick, 4000);
+      }
+    };
+    tick();
+    return () => { stop = true; };
+  }, [reference, failed]); // eslint-disable-line react-hooks/exhaustive-deps
+  return (
+    <Card className="w-full max-w-md">
+      <CardContent className="p-8 text-center space-y-4">
+        {failed ? (
+          <>
+            <h2 className="text-2xl font-display font-bold">Payment not completed</h2>
+            <p className="text-muted-foreground">No ticket was issued. You can try again.</p>
+            <Button className="rounded-full" onClick={onRetry}>Try again</Button>
+          </>
+        ) : (
+          <>
+            <Loader2 className="w-10 h-10 animate-spin mx-auto text-primary" />
+            <h2 className="text-2xl font-display font-bold">Check your phone</h2>
+            <p className="text-muted-foreground">Approve the mobile money prompt and enter your PIN. Your ticket appears here once payment is confirmed.</p>
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
+
 // ─── Main component ───
 
 const Register = () => {
@@ -369,6 +421,10 @@ const Register = () => {
   const [lookedUp, setLookedUp] = useState(true);
   const [selectedTier, setSelectedTier] = useState<string | null>(null);
   const [savedTier, setSavedTier] = useState<string | null>(null);
+  const [phone, setPhone] = useState("");
+  const [paying, setPaying] = useState(false);
+  const [payRef, setPayRef] = useState<string | null>(null);
+  const [payState, setPayState] = useState<string>("");
   const { data: tierCounts } = useQuery({
     queryKey: ["tier-counts", event?.id],
     enabled: !!event?.id && parseTiers((event as any)?.ticket_tiers).length > 0,
@@ -422,6 +478,29 @@ const Register = () => {
       toast.error("Please choose a ticket type.");
       return;
     }
+    const tierPrice = tiers.find((t) => t.name === selectedTier)?.price || 0;
+    if (tierPrice > 0) {
+      setPaying(true);
+      try {
+        const { data: out, error } = await supabase.functions.invoke("easypay-initiate", {
+          body: { event_id: event.id, data: formData, tier: selectedTier, phone },
+        });
+        if (error || !out?.reference) {
+          let msg = (out as any)?.error;
+          try { msg = msg || (await (error as any)?.context?.json())?.error; } catch { /* ignore */ }
+          throw new Error(msg || "Payment could not start");
+        }
+        setSavedTier(selectedTier);
+        setAttendeeName(formData["Full Name"] || formData["Name"] || "");
+        setPayState("PENDING");
+        setPayRef(out.reference);
+      } catch (err: any) {
+        toast.error(err.message || "Payment could not start");
+      } finally {
+        setPaying(false);
+      }
+      return;
+    }
     try {
       const newId = await createReg.mutateAsync({ event_id: event.id, data: formData, tier: selectedTier });
       setSavedTier(tiers.length > 0 ? selectedTier : null);
@@ -471,8 +550,11 @@ const Register = () => {
     consent,
     onConsentChange: setConsent,
     onSubmit: handleSubmit,
-    isPending: createReg.isPending,
+    isPending: createReg.isPending || paying,
     brandColor,
+    paidPrice: tiers.find((t) => t.name === selectedTier)?.price || 0,
+    phone,
+    onPhoneChange: setPhone,
     tiers,
     tierCounts: tierCounts || {},
     selectedTier,
@@ -495,6 +577,23 @@ const Register = () => {
       )}
     </div>
   );
+
+  if (payRef && !submitted) {
+    const failed = ["FAILED", "CANCELLED", "EXPIRED", "AMOUNT_MISMATCH"].includes(payState);
+    return wrapDark(
+      <div className="min-h-screen flex items-center justify-center px-4 py-12 bg-background text-foreground">
+        <PaymentWaiting
+          reference={payRef}
+          failed={failed}
+          onState={(st, regId) => {
+            setPayState(st);
+            if (st === "COMPLETED" && regId) { setRegistrationId(regId); setLookedUp(false); setSubmitted(true); }
+          }}
+          onRetry={() => { setPayRef(null); setPayState(""); }}
+        />
+      </div>
+    );
+  }
 
   if (submitted) {
     return wrapDark(
