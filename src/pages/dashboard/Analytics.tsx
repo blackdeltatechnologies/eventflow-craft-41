@@ -5,6 +5,7 @@ import {
 import { useRegistrationStats } from "@/hooks/useRegistrations";
 import { useMemo } from "react";
 import { format, parseISO, startOfDay, subDays, eachDayOfInterval } from "date-fns";
+import PaymentsPanel from "@/components/event-detail/PaymentsPanel";
 
 const Analytics = () => {
   const { data: stats, isLoading } = useRegistrationStats();
@@ -73,6 +74,8 @@ const Analytics = () => {
         <h1 className="text-3xl font-display font-bold">Analytics</h1>
         <p className="text-muted-foreground">Track your event performance, registration trends, and check-in rates.</p>
       </div>
+
+      <PaymentsPanel />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {statCards.map((stat) => (

@@ -6,6 +6,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Search, Download, Loader2, ArrowUp, ArrowDown, ArrowUpDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { useRegistrationsByEvent } from "@/hooks/useRegistrations";
 import { format } from "date-fns";
+import AttendeeExportButton from "@/components/AttendeeExportButton";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const statusStyle: Record<string, string> = {
   registered: "bg-primary/10 text-primary border-0",
@@ -18,8 +20,10 @@ type SortDir = "asc" | "desc";
 
 const PAGE_SIZE = 15;
 
-export default function EventAttendeesTable({ eventId }: { eventId: string }) {
+export default function EventAttendeesTable({ eventId, eventName = "" }: { eventId: string; eventName?: string }) {
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [tierFilter, setTierFilter] = useState("all");
   const [sortColumn, setSortColumn] = useState<SortColumn>("date");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [page, setPage] = useState(0);
@@ -52,6 +56,8 @@ export default function EventAttendeesTable({ eventId }: { eventId: string }) {
 
   const filtered = useMemo(() => {
     let items = registrations?.filter(r => {
+      if (statusFilter !== "all" && r.status !== statusFilter) return false;
+      if (tierFilter !== "all" && r.ticket_tier !== tierFilter) return false;
       if (!search) return true;
       const data = r.data as Record<string, string>;
       return Object.values(data).some(v => typeof v === "string" && v.toLowerCase().includes(search.toLowerCase()));
@@ -65,40 +71,10 @@ export default function EventAttendeesTable({ eventId }: { eventId: string }) {
     });
 
     return items;
-  }, [registrations, search, sortColumn, sortDir]);
+  }, [registrations, search, statusFilter, tierFilter, sortColumn, sortDir]);
 
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
   const paged = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
-
-  const handleExportCSV = () => {
-    if (!filtered?.length) return;
-    const headers = ["Name", "Email", "Status", "Date"];
-    const rows = filtered.map(r => {
-      const data = r.data as Record<string, string>;
-      return [
-        data["Full Name"] || data["Name"] || "",
-        data["Email Address"] || data["Email"] || "",
-        r.status,
-        format(new Date(r.created_at), "MMM d, yyyy"),
-      ];
-    });
-    const escapeCSV = (val: string): string => {
-      const str = String(val ?? "");
-      const safe = str.replace(/^([=+\-@])/, "'$1");
-      if (safe.includes(',') || safe.includes('"') || safe.includes('\n')) {
-        return `"${safe.replace(/"/g, '""')}"`;
-      }
-      return safe;
-    };
-    const csv = [headers, ...rows].map(r => r.map(escapeCSV).join(",")).join("\n");
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "attendees.csv";
-    a.click();
-    URL.revokeObjectURL(url);
-  };
 
   return (
     <div className="space-y-4">
@@ -109,19 +85,22 @@ export default function EventAttendeesTable({ eventId }: { eventId: string }) {
         <div className="flex items-center gap-2 w-full sm:w-auto">
           <div className="relative flex-1 sm:flex-initial sm:w-56">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-            <Input placeholder="Search…" className="pl-9 h-8 text-sm rounded-full" value={search} onChange={e => { setSearch(e.target.value); setPage(0); }} />
+            <Input placeholder="Search…" className="pl-9 h-11 text-sm rounded-full bg-card" value={search} onChange={e => { setSearch(e.target.value); setPage(0); }} />
           </div>
-          <Button variant="outline" size="sm" className="h-8 text-xs shrink-0 rounded-full" onClick={handleExportCSV}>
-            <Download className="w-3.5 h-3.5 mr-1" /> Export
-          </Button>
+          <AttendeeExportButton registrations={filtered} eventName={eventName} disabled={isLoading} />
         </div>
+      </div>
+
+      <div className="flex flex-col sm:flex-row gap-3">
+        <Select value={statusFilter} onValueChange={v => { setStatusFilter(v); setPage(0); }}><SelectTrigger className="sm:w-44 bg-card" aria-label="Filter attendee status"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All statuses</SelectItem><SelectItem value="registered">Registered</SelectItem><SelectItem value="checked_in">Checked in</SelectItem><SelectItem value="cancelled">Cancelled</SelectItem></SelectContent></Select>
+        <Select value={tierFilter} onValueChange={v => { setTierFilter(v); setPage(0); }}><SelectTrigger className="sm:w-44 bg-card" aria-label="Filter ticket tier"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All ticket tiers</SelectItem>{[...new Set(registrations?.map(r => r.ticket_tier).filter((tier): tier is string => !!tier))].map(tier => <SelectItem key={tier} value={tier}>{tier}</SelectItem>)}</SelectContent></Select>
       </div>
 
       {isLoading ? (
         <div className="flex justify-center py-12"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>
       ) : paged.length > 0 ? (
         <>
-          <div className="rounded-xl overflow-x-auto">
+          <div className="rounded-xl overflow-x-auto bg-card">
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/50">

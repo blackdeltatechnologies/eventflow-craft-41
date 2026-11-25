@@ -11,7 +11,8 @@ export function useEvents(search?: string) {
   return useQuery({
     queryKey: ["events", user?.id, search],
     queryFn: async () => {
-      let query = supabase.from("events").select("*").order("created_at", { ascending: false });
+      if (!user) return [];
+      let query = supabase.from("events").select("*").eq("user_id", user.id).order("created_at", { ascending: false });
       if (search) {
         query = query.ilike("name", `%${search}%`);
       }
@@ -115,6 +116,10 @@ export function useDuplicateEvent() {
   const { user } = useAuth();
   return useMutation({
     mutationFn: async (source: Event) => {
+      if (!user) throw new Error("Sign in to duplicate an event");
+      if (source.user_id !== user.id) throw new Error("You can only duplicate your own events");
+      const { data: fields, error: fieldsError } = await supabase.from("form_fields").select("*").eq("event_id", source.id);
+      if (fieldsError) throw fieldsError;
       const { id, created_at, updated_at, slug, status, event_date, event_end_date, registration_deadline, user_id, ...rest } = source;
       const name = copyName(source.name);
       const { data, error } = await supabase.from("events").insert({
@@ -122,15 +127,17 @@ export function useDuplicateEvent() {
         name,
         slug: generateSlug(name),
         status: "draft",
-        user_id: user!.id,
+        user_id: user.id,
       }).select().single();
       if (error) throw error;
-      const { data: fields } = await supabase.from("form_fields").select("*").eq("event_id", id);
       if (fields && fields.length) {
         const { error: fErr } = await supabase.from("form_fields").insert(
           fields.map(({ id: _id, event_id: _e, ...f }) => ({ ...f, event_id: data.id }))
         );
-        if (fErr) throw fErr;
+        if (fErr) {
+          await supabase.from("events").delete().eq("id", data.id);
+          throw fErr;
+        }
       }
       return data as Event;
     },

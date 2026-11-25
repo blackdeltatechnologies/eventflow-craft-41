@@ -9,6 +9,7 @@ import { Search, Download, Loader2, ArrowUp, ArrowDown, ArrowUpDown, ChevronLeft
 import { useRegistrations, Registration } from "@/hooks/useRegistrations";
 import { useRegistrationStats } from "@/hooks/useRegistrations";
 import { format } from "date-fns";
+import AttendeeExportButton from "@/components/AttendeeExportButton";
 
 const statusStyle: Record<string, string> = {
   registered: "bg-primary/10 text-primary border-0",
@@ -23,6 +24,8 @@ const PAGE_SIZE = 15;
 const Attendees = () => {
   const [search, setSearch] = useState("");
   const [eventFilter, setEventFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [tierFilter, setTierFilter] = useState("all");
   const [sortColumn, setSortColumn] = useState<SortColumn>("date");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [page, setPage] = useState(0);
@@ -67,6 +70,8 @@ const Attendees = () => {
   const filtered = useMemo(() => {
     let items = registrations?.filter(r => {
       if (eventFilter !== "all" && r.event_id !== eventFilter) return false;
+      if (statusFilter !== "all" && r.status !== statusFilter) return false;
+      if (tierFilter !== "all" && r.ticket_tier !== tierFilter) return false;
       if (!search) return true;
       const data = r.data as Record<string, string>;
       const searchLower = search.toLowerCase();
@@ -84,41 +89,10 @@ const Attendees = () => {
     });
 
     return items;
-  }, [registrations, search, eventFilter, sortColumn, sortDir]);
+  }, [registrations, search, eventFilter, statusFilter, tierFilter, sortColumn, sortDir]);
 
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
   const paged = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
-
-  const handleExportCSV = () => {
-    if (!filtered?.length) return;
-    const headers = ["Name", "Email", "Event", "Status", "Date"];
-    const rows = filtered.map(r => {
-      const data = r.data as Record<string, string>;
-      return [
-        data["Full Name"] || data["Name"] || "",
-        data["Email Address"] || data["Email"] || "",
-        (r as any).events?.name || "",
-        r.status,
-        format(new Date(r.created_at), "MMM d, yyyy"),
-      ];
-    });
-    const escapeCSV = (val: string): string => {
-      const str = String(val ?? "");
-      const safe = str.replace(/^([=+\-@])/, "'$1");
-      if (safe.includes(',') || safe.includes('"') || safe.includes('\n')) {
-        return `"${safe.replace(/"/g, '""')}"`;
-      }
-      return safe;
-    };
-    const csv = [headers, ...rows].map(r => r.map(escapeCSV).join(",")).join("\n");
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `attendees${eventFilter !== "all" ? "-filtered" : ""}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
 
   const getRegData = (r: Registration) => r.data as Record<string, string>;
 
@@ -129,9 +103,7 @@ const Attendees = () => {
           <h1 className="text-3xl font-display font-bold">Attendees</h1>
           <p className="text-muted-foreground">Manage and export your attendee data.</p>
         </div>
-        <Button variant="outline" size="sm" className="w-full sm:w-auto rounded-full bg-card" onClick={handleExportCSV}>
-          <Download className="w-4 h-4 mr-2" /> Export CSV
-        </Button>
+        <AttendeeExportButton registrations={filtered} disabled={isLoading} />
       </div>
 
       {/* Stats row */}
@@ -151,7 +123,7 @@ const Attendees = () => {
       )}
 
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3">
+      <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3">
         <div className="relative flex-1 sm:max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input placeholder="Search attendees…" className="pl-10 rounded-full bg-card" value={search} onChange={e => { setSearch(e.target.value); setPage(0); }} />
@@ -167,6 +139,8 @@ const Attendees = () => {
             ))}
           </SelectContent>
         </Select>
+        <Select value={statusFilter} onValueChange={v => { setStatusFilter(v); setPage(0); }}><SelectTrigger className="w-full sm:w-44 bg-card" aria-label="Filter attendee status"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All statuses</SelectItem><SelectItem value="registered">Registered</SelectItem><SelectItem value="checked_in">Checked in</SelectItem><SelectItem value="cancelled">Cancelled</SelectItem></SelectContent></Select>
+        <Select value={tierFilter} onValueChange={v => { setTierFilter(v); setPage(0); }}><SelectTrigger className="w-full sm:w-44 bg-card" aria-label="Filter ticket tier"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All ticket tiers</SelectItem>{[...new Set(registrations?.map(r => r.ticket_tier).filter((tier): tier is string => !!tier))].map(tier => <SelectItem key={tier} value={tier}>{tier}</SelectItem>)}</SelectContent></Select>
       </div>
 
       {isLoading ? (
@@ -236,7 +210,7 @@ const Attendees = () => {
         </>
       ) : (
         <div className="text-center py-20">
-          <p className="text-muted-foreground">{search || eventFilter !== "all" ? "No matching attendees." : "No registrations yet."}</p>
+          <p className="text-muted-foreground">{search || eventFilter !== "all" || statusFilter !== "all" || tierFilter !== "all" ? "No matching attendees." : "No registrations yet."}</p>
         </div>
       )}
 

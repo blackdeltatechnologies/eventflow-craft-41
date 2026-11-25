@@ -4,8 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Link, useNavigate } from "react-router-dom";
-import { Plus, Search, CalendarDays, Users, Loader2, MapPin, ExternalLink, LayoutGrid, List } from "lucide-react";
-import { useEvents } from "@/hooks/useEvents";
+import { Plus, Search, CalendarDays, Users, Loader2, MapPin, ExternalLink, LayoutGrid, List, CopyPlus } from "lucide-react";
+import { useEvents, useDuplicateEvent, Event } from "@/hooks/useEvents";
+import { toast } from "sonner";
 import { useRegistrations } from "@/hooks/useRegistrations";
 import { format } from "date-fns";
 
@@ -22,6 +23,16 @@ const Events = () => {
   const [viewMode, setViewMode] = useState<"list" | "grid">("grid");
   const { data: events, isLoading } = useEvents(search || undefined);
   const { data: registrations } = useRegistrations();
+  const duplicate = useDuplicateEvent();
+  const handleDuplicate = async (event: Event) => {
+    try {
+      const copy = await duplicate.mutateAsync(event);
+      toast.success("Event duplicated as a draft");
+      navigate(`/dashboard/events/${copy.id}`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not duplicate this event");
+    }
+  };
 
   const regCounts: Record<string, number> = {};
   registrations?.forEach((r) => {
@@ -33,7 +44,7 @@ const Events = () => {
   // Upcoming events: future-dated, sorted by date, take first 4
   const upcoming = events
     ?.filter(e => e.event_date && new Date(e.event_date) >= new Date())
-    .sort((a, b) => new Date(a.event_date!).getTime() - new Date(b.event_date!).getTime())
+    .sort((a, b) => new Date(a.event_date || 0).getTime() - new Date(b.event_date || 0).getTime())
     .slice(0, 4);
 
   const EventCard = ({ event, variant = "default" }: { event: NonNullable<typeof events>[number]; variant?: "default" | "upcoming" }) => {
@@ -47,6 +58,9 @@ const Events = () => {
       >
         {/* Image */}
         <div className="relative aspect-[16/10] rounded-xl overflow-hidden bg-muted mb-3">
+          <Button variant="outline" size="icon" className="absolute top-3 right-3 z-10 bg-card border-0" aria-label={`Duplicate ${event.name}`} title={`Duplicate ${event.name}`} disabled={duplicate.isPending} onClick={e => { e.stopPropagation(); handleDuplicate(event); }}>
+            {duplicate.isPending && duplicate.variables?.id === event.id ? <Loader2 className="animate-spin" /> : <CopyPlus />}
+          </Button>
           {event.background_image_url ? (
             <img
               src={event.background_image_url}
@@ -143,18 +157,18 @@ const Events = () => {
           </SelectContent>
         </Select>
         <div className="flex bg-muted rounded-full p-1 sm:ml-auto">
-          <button
+          <Button variant="ghost" size="icon" aria-label="List view" title="List view"
             onClick={() => setViewMode("list")}
             className={`p-2 rounded-full transition-colors ${viewMode === "list" ? "bg-card shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
           >
             <List className="w-4 h-4" />
-          </button>
-          <button
+          </Button>
+          <Button variant="ghost" size="icon" aria-label="Grid view" title="Grid view"
             onClick={() => setViewMode("grid")}
             className={`p-2 rounded-full transition-colors ${viewMode === "grid" ? "bg-card shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
           >
             <LayoutGrid className="w-4 h-4" />
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -205,6 +219,9 @@ const Events = () => {
                       )}
                     </div>
                     <div className="flex gap-2 pt-2">
+                      <Button variant="outline" size="icon" aria-label={`Duplicate ${event.name}`} title={`Duplicate ${event.name}`} disabled={duplicate.isPending} onClick={e => { e.stopPropagation(); handleDuplicate(event); }}>
+                        {duplicate.isPending && duplicate.variables?.id === event.id ? <Loader2 className="animate-spin" /> : <CopyPlus />}
+                      </Button>
                       <Button variant="outline" size="sm" className="text-xs rounded-full" asChild onClick={(e) => e.stopPropagation()}>
                         <Link to={`/register/${event.slug}`}><ExternalLink className="w-3 h-3 mr-1" />View page</Link>
                       </Button>

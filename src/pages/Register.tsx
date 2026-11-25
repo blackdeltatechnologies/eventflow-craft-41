@@ -18,6 +18,7 @@ import { motion } from "framer-motion";
 import { Tables } from "@/integrations/supabase/types";
 import { parseTiers, tierRemaining, TicketTier, formatTzs } from "@/lib/ticketTiers";
 import { useQuery } from "@tanstack/react-query";
+import { detectMobileNetwork, formatTanzaniaPhone, normalizeTanzaniaPhone } from "@/lib/mobileMoney";
 
 type FormField = Tables<"form_fields">;
 
@@ -332,7 +333,10 @@ const RegistrationForm = ({
     {paidPrice > 0 && (
       <div className="space-y-2">
         <Label htmlFor="mm-phone">Mobile money number (M-Pesa, Airtel, Mixx, HaloPesa) *</Label>
-        <Input id="mm-phone" type="tel" inputMode="tel" placeholder="0712345678" value={phone} onChange={(e) => onPhoneChange(e.target.value)} required />
+        <Input id="mm-phone" type="tel" inputMode="tel" autoComplete="tel" placeholder="0712345678 or +255…" value={phone} onChange={(e) => onPhoneChange(e.target.value)} onBlur={() => onPhoneChange(formatTanzaniaPhone(phone))} aria-describedby="mm-phone-hint" required />
+        <p id="mm-phone-hint" className={`text-xs ${phone && !normalizeTanzaniaPhone(phone) ? "text-destructive" : "text-muted-foreground"}`} aria-live="polite">
+          {!phone ? "Use a Tanzanian mobile money number." : !normalizeTanzaniaPhone(phone) ? "Enter 10 digits starting with 06 / 07, or use +255 followed by 9 digits." : detectMobileNetwork(phone) ? `${detectMobileNetwork(phone)} (estimated). Ported numbers may use another network.` : "Network not recognized; EasyPay will confirm availability."}
+        </p>
         <p className="text-xs text-muted-foreground">You'll get a prompt on this phone to pay {formatTzs(paidPrice)}.</p>
       </div>
     )}
@@ -480,10 +484,15 @@ const Register = () => {
     }
     const tierPrice = tiers.find((t) => t.name === selectedTier)?.price || 0;
     if (tierPrice > 0) {
+      const normalizedPhone = normalizeTanzaniaPhone(phone);
+      if (!normalizedPhone) {
+        toast.error("Enter a valid Tanzanian mobile money number (06 / 07 or +255).");
+        return;
+      }
       setPaying(true);
       try {
         const { data: out, error } = await supabase.functions.invoke("easypay-initiate", {
-          body: { event_id: event.id, data: formData, tier: selectedTier, phone },
+          body: { event_id: event.id, data: formData, tier: selectedTier, phone: normalizedPhone },
         });
         if (error || !out?.reference) {
           let msg = (out as any)?.error;

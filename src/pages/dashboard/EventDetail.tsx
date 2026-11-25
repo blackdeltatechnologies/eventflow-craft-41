@@ -16,6 +16,7 @@ import EventQuickInfo from "@/components/event-detail/EventQuickInfo";
 import EventAttendeesTable from "@/components/event-detail/EventAttendeesTable";
 import EventQRCode from "@/components/event-detail/EventQRCode";
 import TicketTiersEditor from "@/components/event-detail/TicketTiersEditor";
+import PaymentsPanel from "@/components/event-detail/PaymentsPanel";
 
 const EventDetail = () => {
   const { id } = useParams();
@@ -72,10 +73,11 @@ const EventDetail = () => {
       <EventQuickInfo event={event} onUpdate={handleUpdate} />
 
       <Tabs defaultValue="branding">
-        <TabsList className="bg-muted rounded-full p-1 w-full sm:w-auto">
+        <TabsList className="bg-muted rounded-full p-1 w-full sm:w-auto h-auto flex-wrap">
           <TabsTrigger value="branding" className="flex-1 sm:flex-initial rounded-full data-[state=active]:bg-card data-[state=active]:shadow-sm">Branding</TabsTrigger>
           <TabsTrigger value="form" className="flex-1 sm:flex-initial rounded-full data-[state=active]:bg-card data-[state=active]:shadow-sm">Reg. form</TabsTrigger>
           <TabsTrigger value="settings" className="flex-1 sm:flex-initial rounded-full data-[state=active]:bg-card data-[state=active]:shadow-sm">Settings</TabsTrigger>
+          <TabsTrigger value="payments" className="flex-1 sm:flex-initial rounded-full data-[state=active]:bg-card data-[state=active]:shadow-sm">Payments</TabsTrigger>
         </TabsList>
 
         <TabsContent value="branding" className="mt-5 space-y-5">
@@ -193,6 +195,8 @@ const EventDetail = () => {
           </div>
         </TabsContent>
 
+        <TabsContent value="payments" className="mt-5"><PaymentsPanel eventId={event.id} /></TabsContent>
+
         <TabsContent value="settings" className="mt-5 space-y-5">
           <TicketTiersEditor event={event} onSave={(ticket_tiers) => updateEvent.mutateAsync({ id: event.id, ticket_tiers })} />
           <div className="bg-card rounded-xl p-5 sm:p-6 space-y-4">
@@ -214,7 +218,7 @@ const EventDetail = () => {
         </TabsContent>
       </Tabs>
 
-      <EventAttendeesTable eventId={event.id} />
+      <EventAttendeesTable eventId={event.id} eventName={event.name} />
     </div>
   );
 };
