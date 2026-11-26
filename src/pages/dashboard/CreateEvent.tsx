@@ -174,7 +174,9 @@ const CreateEvent = () => {
     setUploading(true);
     try {
       const ext = file.name.split(".").pop();
-      const path = `flyers/${Date.now()}.${ext}`;
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (!authUser) throw new Error("Please sign in again");
+      const path = `${authUser.id}/flyers/${Date.now()}.${ext}`;
       const { error: uploadError } = await supabase.storage.from("event-assets").upload(path, file);
       if (uploadError) throw uploadError;
       const { data: urlData } = supabase.storage.from("event-assets").getPublicUrl(path);

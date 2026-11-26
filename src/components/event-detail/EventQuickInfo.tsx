@@ -22,7 +22,9 @@ export default function EventQuickInfo({ event, onUpdate }: Props) {
     if (!file) return;
 
     const ext = file.name.split(".").pop();
-    const path = `event-images/${event.id}.${ext}`;
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (!authUser) { toast.error("Please sign in again"); return; }
+    const path = `${authUser.id}/event-images/${event.id}.${ext}`;
 
     const { error } = await supabase.storage
       .from("event-assets")
