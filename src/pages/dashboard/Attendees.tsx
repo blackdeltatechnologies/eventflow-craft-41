@@ -181,7 +181,7 @@ const Attendees = () => {
                       <TableCell className="text-muted-foreground hidden sm:table-cell">{data["Email Address"] || data["Email"] || "—"}</TableCell>
                       <TableCell className="hidden md:table-cell">{r.events?.name || "—"}</TableCell>
                       <TableCell>
-                        <Badge className={`${statusStyle[r.status] || ""} capitalize text-xs`}>{r.status.replace("_", " ")}</Badge>
+                        <div className="flex flex-wrap gap-1"><Badge className={`${statusStyle[r.status] || ""} capitalize text-xs`}>{r.status.replace("_", " ")}</Badge>{r.ticket_tier && <Badge variant="secondary" className="text-xs border-0">{r.ticket_tier}</Badge>}{r.payment_status && <Badge variant="outline" className="text-xs capitalize">{r.payment_status}</Badge>}</div>
                       </TableCell>
                       <TableCell className="text-muted-foreground hidden lg:table-cell">{format(new Date(r.created_at), "MMM d, yyyy")}</TableCell>
                     </TableRow>

@@ -16,7 +16,8 @@ describe("attendee exports", () => {
     const blob = await buildAttendeeXlsx([attendee]);
     const { Workbook } = await import("exceljs");
     const book = new Workbook();
-    await book.xlsx.load(await blob.arrayBuffer());
+    const buffer = await new Promise<ArrayBuffer>((resolve, reject) => { const r = new FileReader(); r.onload = () => resolve(r.result as ArrayBuffer); r.onerror = reject; r.readAsArrayBuffer(blob); });
+    await book.xlsx.load(buffer);
     expect(book.getWorksheet("Attendees")?.getRow(2).getCell(4).value).toBe("VIP");
     expect(book.getWorksheet("Attendees")?.getRow(2).getCell(8).value).toBe("2026-11-25T08:00:00Z");
   });

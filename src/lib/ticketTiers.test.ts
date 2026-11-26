@@ -4,8 +4,8 @@ import { parseTiers, tierRemaining, copyName } from "./ticketTiers";
 describe("ticket tiers", () => {
   it("drops tiers without a name and treats 0 capacity as unlimited", () => {
     expect(parseTiers([{ name: "VIP", capacity: 20 }, { name: "" }, { name: "GA", capacity: 0 }])).toEqual([
-      { name: "VIP", description: "", capacity: 20 },
-      { name: "GA", description: "", capacity: null },
+      { name: "VIP", description: "", capacity: 20, price: null },
+      { name: "GA", description: "", capacity: null, price: null },
     ]);
   });
   it("computes remaining spots per tier", () => {

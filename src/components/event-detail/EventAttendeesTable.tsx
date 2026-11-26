@@ -126,7 +126,7 @@ export default function EventAttendeesTable({ eventId, eventName = "" }: { event
                       <TableCell className="font-medium">{data["Full Name"] || data["Name"] || "—"}</TableCell>
                       <TableCell className="text-muted-foreground text-sm">{data["Email Address"] || data["Email"] || "—"}</TableCell>
                       <TableCell>
-                        <Badge className={`${statusStyle[r.status] || ""} capitalize text-xs`}>{r.status.replace("_", " ")}</Badge>
+                        <div className="flex flex-wrap gap-1"><Badge className={`${statusStyle[r.status] || ""} capitalize text-xs`}>{r.status.replace("_", " ")}</Badge>{r.ticket_tier && <Badge variant="secondary" className="text-xs border-0">{r.ticket_tier}</Badge>}{r.payment_status && <Badge variant="outline" className="text-xs capitalize">{r.payment_status}</Badge>}</div>
                       </TableCell>
                       <TableCell className="text-muted-foreground text-sm">{format(new Date(r.created_at), "MMM d, yyyy")}</TableCell>
                     </TableRow>
