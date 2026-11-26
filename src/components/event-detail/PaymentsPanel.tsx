@@ -49,7 +49,7 @@ export default function PaymentsPanel({ eventId }: { eventId?: string }) {
       </div>
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1"><Search className="absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" /><Input aria-label="Search payments" placeholder="Phone, reference or ticket tier…" className="pl-10 bg-card" value={search} onChange={e => { setSearch(e.target.value); setPage(0); }} /></div>
-        <Select value={status} onValueChange={value => { setStatus(value); setPage(0); }}><SelectTrigger className="sm:w-48 bg-card" aria-label="Payment status"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All payment statuses</SelectItem>{[...new Set(payments.map(p => p.state))].sort().map(state => <SelectItem key={state} value={state}>{state.replaceAll("_", " ")}</SelectItem>)}</SelectContent></Select>
+        <Select value={status} onValueChange={value => { setStatus(value); setPage(0); }}><SelectTrigger className="sm:w-48 bg-card" aria-label="Payment status"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All payment statuses</SelectItem>{[...new Set(payments.map(p => p.state))].sort().map(state => <SelectItem key={state} value={state}>{state.replace(/_/g, " ")}</SelectItem>)}</SelectContent></Select>
       </div>
       <div className="overflow-x-auto bg-card rounded-lg">
         <Table>
@@ -57,7 +57,7 @@ export default function PaymentsPanel({ eventId }: { eventId?: string }) {
           <TableBody>{filtered.slice(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE).map(p => <TableRow key={p.id}>
             <TableCell className="min-w-48"><p className="font-medium">{p.events?.name || "Event"}</p><p className="text-xs text-muted-foreground break-all">{p.easypay_reference || p.merchant_reference}</p></TableCell>
             <TableCell className="whitespace-nowrap font-medium">{p.currency} {Number(p.amount).toLocaleString("en-US")}</TableCell>
-            <TableCell><Badge className={`border-0 whitespace-nowrap ${statusColors[p.state] || "bg-muted text-muted-foreground"}`}>{p.state.replaceAll("_", " ")}</Badge>{p.failure_reason && <p className="text-xs text-muted-foreground max-w-48 mt-1 break-words">{p.failure_reason}</p>}</TableCell>
+            <TableCell><Badge className={`border-0 whitespace-nowrap ${statusColors[p.state] || "bg-muted text-muted-foreground"}`}>{p.state.replace(/_/g, " ")}</Badge>{p.failure_reason && <p className="text-xs text-muted-foreground max-w-48 mt-1 break-words">{p.failure_reason}</p>}</TableCell>
             <TableCell className="whitespace-nowrap"><p>{formatTanzaniaPhone(p.payer_phone)}</p><p className="text-xs text-muted-foreground">{detectMobileNetwork(p.payer_phone) || "Unknown"}</p></TableCell>
             <TableCell>{p.registrations?.ticket_tier || "—"}</TableCell><TableCell className="whitespace-nowrap text-muted-foreground">{format(new Date(p.created_at), "MMM d, yyyy HH:mm")}</TableCell>
           </TableRow>)}{!filtered.length && <TableRow><TableCell colSpan={6} className="text-center py-10 text-muted-foreground">{payments.length ? "No matching payments." : "No payments yet."}</TableCell></TableRow>}</TableBody>
